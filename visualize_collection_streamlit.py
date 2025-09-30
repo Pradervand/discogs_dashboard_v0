@@ -243,30 +243,6 @@ st.markdown(
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
 
-# Pick the first random album as "current"
-if st.session_state.random_albums:
-    idx = st.session_state.random_albums[0]
-    current_row = st.session_state.all_covers.loc[idx]
-
-    # Check if we have a video_url column in your dataframe
-    if "video_url" in current_row and pd.notna(current_row["video_url"]):
-        st.sidebar.markdown("🎧 Play this album:")
-        st.sidebar.markdown(
-            f"""<iframe width="300" height="80"
-                src="{current_row['video_url']}"
-                frameborder="0"
-                allow="autoplay; encrypted-media"
-                allowfullscreen>
-            </iframe>""",
-            unsafe_allow_html=True
-        )
-    else:
-        # Fallback: open YouTube search
-        title = current_row.get("title", "")
-        artists = current_row.get("artists", "")
-        query = f"{artists} {title}".strip()
-        yt_search_link = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-        st.sidebar.markdown(f"[🔍 Search on YouTube]({yt_search_link})", unsafe_allow_html=True)
 
 
 
