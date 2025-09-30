@@ -163,4 +163,57 @@ if df_time.empty:
     st.warning("No valid 'date_added' found in your collection.")
 else:
     monthly_adds = df_time.resample("M").size()
-    cumulative
+    cumulative = monthly_adds.cumsum()
+
+    df_growth = pd.DataFrame({
+        "Month": monthly_adds.index,
+        "New records": monthly_adds.values,
+        "Cumulative": cumulative.values
+    })
+
+    fig_growth = px.line(
+        df_growth,
+        x="Month",
+        y=["New records", "Cumulative"],
+        title=f"Discogs Collection Growth Over Time "
+              f"(showing {len(df_time)} / {len(df_filtered)} records)"
+    )
+    st.plotly_chart(fig_growth, use_container_width=True)
+
+    if missing_added > 0:
+        st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
+                f"and are excluded from the growth chart.")
+
+# --------------------------
+# Album Art Preview in Sidebar
+# --------------------------
+st.sidebar.subheader("🎨 Random Album Covers")
+
+if st.sidebar.button("🔄 Reload"):
+    st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
+
+if "random_albums" not in st.session_state:
+    st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
+
+for idx in st.session_state.random_albums:
+    row = df_filtered.loc[idx]
+    cover_url = row.get("cover_url")
+    release_id = row.get("release_id")
+    title = row.get("title", "Unknown Title")
+    if cover_url and release_id:
+        link = f"https://www.discogs.com/release/{release_id}"
+        st.sidebar.markdown(
+            f"""
+            <a href="{link}" target="_blank">
+                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+            </a>
+            <div style="text-align:center; font-size:11px; margin-bottom:12px;">{title}</div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# --------------------------
+# Data Preview
+# --------------------------
+st.subheader("🔍 Data Preview")
+st.dataframe(df_filtered.head(50))
