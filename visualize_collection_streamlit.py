@@ -239,7 +239,6 @@ with col1:
     st.markdown("### 🎨 Random Album")
 with col2:
     if st.button("🔄", key="reload_album"):
-        # Force refresh of the random album
         st.session_state.random_album = None
 
 # Pick or refresh random album
@@ -248,16 +247,26 @@ if "random_album" not in st.session_state or st.session_state.random_album is No
 
 album = st.session_state.random_album
 
-# Display album details
-cover_url = album["cover_url"]
-release_id = album["release_id"]
-artist = album.get("artist", "Unknown").split(" (")[0]  # clean artist name
+# Clean fields
+def clean_name(value):
+    if not value or str(value).lower() == "nan":
+        return "Unknown"
+    # If multiple names (list-like), join them
+    if isinstance(value, (list, tuple)):
+        return " / ".join(str(v).split(" (")[0] for v in value)
+    return str(value).split(" (")[0]  # strip (5), (6)
+
+cover_url = album.get("cover_url", "")
+release_id = album.get("release_id", "")
+artist = clean_name(album.get("artists", album.get("artist", "Unknown")))
 title = album.get("title", "Unknown")
-label = album.get("label", "Unknown").split(" (")[0]    # clean label
+label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
+videos = album.get("videos", [])  # expect list of dicts
 
 link = f"https://www.discogs.com/release/{release_id}"
 
+# Album info block
 st.sidebar.markdown(
     f"""
     <div style="text-align:center;">
@@ -272,11 +281,49 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+# Embedded videos (if available)
+if isinstance(videos, list) and len(videos) > 0:
+    st.sidebar.markdown("#### ▶️ Videos")
+    for v in videos[:2]:  # show up to 2 videos
+        uri = v.get("uri")
+        if uri and "youtube.com" in uri:
+            youtube_id = uri.split("v=")[-1]
+            st.sidebar.markdown(
+                f"""
+                <iframe width="100%" height="200" 
+                        src="https://www.youtube.com/embed/{youtube_id}" 
+                        frameborder="0" allowfullscreen></iframe>
+                """,
+                unsafe_allow_html=True
+            )
+
+# Style reload button (no gray box)
+st.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        background: none !important;
+        border: none !important;
+        color: #e74c3c !important;
+        font-size: 20px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+    div.stButton > button:first-child:hover {
+        color: #c0392b !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
