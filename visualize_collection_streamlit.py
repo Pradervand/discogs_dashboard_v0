@@ -196,7 +196,7 @@ if "random_albums" not in st.session_state:
 
 # Reload button inside a small form (isolates refresh to this block)
 with st.sidebar.form("reload_form", clear_on_submit=False):
-    reload = st.form_submit_button("🔄 Reload 12")
+    reload = st.form_submit_button("🔄")
     if reload:
         st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
 
@@ -223,4 +223,5 @@ for i, idx in enumerate(st.session_state.random_albums):
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
