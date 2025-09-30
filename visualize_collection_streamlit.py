@@ -86,51 +86,25 @@ with col4:
     else:
         st.metric("🏆 Favourite Label", "N/A")
 
-# --------------------------
-# Album Highlights (Oldest & Least Collected)
-# --------------------------
-st.markdown("### 🌟 Album Highlights")
+# ---------------------
+# Detailed Album Highlights
+# ---------------------
+st.subheader("📚 Special Highlights")
 
-highlight_cols = st.columns(2)
+col1, col2 = st.columns(2)
 
-# --- Oldest album ---
-valid_years = df_filtered[pd.to_numeric(df_filtered["year"], errors="coerce") > 0]
-if not valid_years.empty:
-    oldest_album = valid_years.loc[valid_years["year"].idxmin()]
-    with highlight_cols[0]:
-        st.markdown(
-            f"""
-            <div style="text-align:center;">
-                <a href="https://www.discogs.com/release/{oldest_album['release_id']}" target="_blank">
-                    <img src="{oldest_album['thumb']}" 
-                         style="width:70%; border-radius:8px; margin-bottom:8px;
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-                </a>
-                <p><b>{oldest_album['artists']}</b><br>{oldest_album['title']}<br>
-                <span style="color:gray; font-size:90%;">{int(oldest_album['year'])}</span></p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+with col1:
+    # Oldest album in collection (ignoring year 0)
+    oldest_album = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
+    render_highlight_album(oldest_album, "📀 Oldest Album")
 
-# --- Least collected album ---
-if "community_have" in df_filtered.columns and not df_filtered["community_have"].isna().all():
-    least_collected = df_filtered.loc[df_filtered["community_have"].astype(float).idxmin()]
-    with highlight_cols[1]:
-        st.markdown(
-            f"""
-            <div style="text-align:center;">
-                <a href="https://www.discogs.com/release/{least_collected['release_id']}" target="_blank">
-                    <img src="{least_collected['thumb']}" 
-                         style="width:70%; border-radius:8px; margin-bottom:8px;
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-                </a>
-                <p><b>{least_collected['artists']}</b><br>{least_collected['title']}<br>
-                <span style="color:gray; font-size:90%;">Owned by {int(least_collected['community_have'])} users</span></p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+with col2:
+    # Least collected album (based on Discogs community 'have' count)
+    if "community.have" in df_filtered.columns:
+        least_collected_album = df_filtered.sort_values("community.have").iloc[0]
+        render_highlight_album(least_collected_album, "🌍 Least Collected Album")
+    else:
+        st.info("No community collection data available to determine least collected album.")
 
 # --------------------------
 # Records by Year
@@ -410,6 +384,7 @@ st.markdown(
 st.subheader("🔍 Data")
 
 st.dataframe(df_filtered, use_container_width=True)
+
 
 
 
