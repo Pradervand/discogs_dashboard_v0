@@ -362,7 +362,7 @@ if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highe
     st.sidebar.markdown(
         f"""
         <div style="text-align:center; padding:6px; border-radius:8px;
-                    background-color:#f9f9f9; box-shadow:0 1px 3px rgba(0,0,0,0.1);
+                    background-color:none; box-shadow:0 1px 3px rgba(0,0,0,0.1);
                     margin-top:8px; font-size:90%;">
             💵 <b>Prices (USD)</b><br>
             Lowest: <span style="color:#27ae60;">{low_s}</span><br>
@@ -410,6 +410,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
