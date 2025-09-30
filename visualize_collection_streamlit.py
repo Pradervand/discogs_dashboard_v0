@@ -184,7 +184,6 @@ else:
     if missing_added > 0:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
-
 # --------------------------
 # Album Art Preview in Sidebar (grid)
 # --------------------------
@@ -208,14 +207,19 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
+def pick_random_albums(df, n=12):
+    valid = df.dropna(subset=["cover_url"])
+    if len(valid) <= n:
+        return valid.index.tolist()
+    return random.sample(list(valid.index), n)
+
 # Initialize state
 if "random_albums" not in st.session_state:
-    st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
+    st.session_state.random_albums = pick_random_albums(df_filtered)
 
 # Handle reload manually
 if "reload" in st.query_params:
-    st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
-    # Clear the query param so it doesn't persist
+    st.session_state.random_albums = pick_random_albums(df_filtered)
     st.query_params.clear()
 
 # Display covers in 3-column grid
@@ -241,6 +245,7 @@ for i, idx in enumerate(st.session_state.random_albums):
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
