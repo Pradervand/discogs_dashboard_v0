@@ -321,19 +321,23 @@ year = album.get("year", "Unknown")
 
 link = f"https://www.discogs.com/release/{release_id}"
 
-# 🔹 Function to fetch prices
 def fetch_price_stats(release_id):
-    url = f"https://api.discogs.com/marketplace/stats/{release_id}"
+    url = f"{BASE_URL}/marketplace/stats/{release_id}"
     try:
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers)  # ✅ use global headers
         r.raise_for_status()
         data = r.json()
+
+        # Optional: debug the JSON
+        # st.sidebar.json(data)
+
         return {
             "lowest": data.get("lowest_price"),
             "median": data.get("median_price"),
             "highest": data.get("highest_price"),
         }
-    except Exception:
+    except Exception as e:
+        st.sidebar.warning(f"⚠️ Price data unavailable for {release_id}: {e}")
         return None
 
 # 🔹 Helper for formatting price
@@ -414,6 +418,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
