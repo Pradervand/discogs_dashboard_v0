@@ -86,25 +86,6 @@ with col4:
     else:
         st.metric("🏆 Favourite Label", "N/A")
 
-# ---------------------
-# Detailed Album Highlights
-# ---------------------
-st.subheader("📚 Special Highlights")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    oldest_album = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
-    render_highlight_album(oldest_album, "📀 Oldest Album")
-
-with col2:
-    if "community.have" in df_filtered.columns:
-        least_collected_album = df_filtered.sort_values("community.have").iloc[0]
-        render_highlight_album(least_collected_album, "🌍 Least Collected Album")
-    else:
-        st.info("No community collection data available to determine least collected album.")
-
-
 # --------------------------
 # Top Styles
 # --------------------------
@@ -356,6 +337,7 @@ st.markdown(
 st.subheader("🔍 Data")
 
 st.dataframe(df_filtered, use_container_width=True)
+
 
 
 
