@@ -246,10 +246,11 @@ def pick_random_album(df):
         return None
     return df.sample(1).iloc[0]
 
-if "random_album" not in st.session_state or st.session_state.random_album is None:
-    st.session_state.random_album = pick_random_album(st.session_state.all_covers)
+if "random_album" not in st.session_state or st.button("🔄 Pick another album"):
+    st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
 
 album = st.session_state.random_album
+
 if album is not None:
     cover_url = album["cover_url"]
     release_id = album["release_id"]
@@ -311,6 +312,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
