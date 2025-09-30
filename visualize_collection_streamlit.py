@@ -86,37 +86,6 @@ with col4:
     else:
         st.metric("🏆 Favourite Label", "N/A")
 
-# ----------------------------------
-# 🎯 Special Highlights
-# ----------------------------------
-st.markdown("## 🎯 Collection Highlights")
-
-col1, col2 = st.columns(2)
-
-# 🎵 Oldest album (ignoring year 0)
-oldest_album = df_filtered[df_filtered["year"] > 0].sort_values("year", ascending=True).iloc[0]
-
-with col1:
-    st.image(oldest_album["thumb_url"], width=120)
-    st.markdown(
-        f"""
-        **{oldest_album['artists']} – {oldest_album['title']}**  
-        *{oldest_album['label']} ({oldest_album['year']})*
-        """
-    )
-
-# 📀 Least collected album (lowest "have" count)
-least_collected_album = df_filtered.sort_values("have", ascending=True).iloc[0]
-
-with col2:
-    st.image(least_collected_album["thumb_url"], width=120)
-    st.markdown(
-        f"""
-        **{least_collected_album['artists']} – {least_collected_album['title']}**  
-        *{least_collected_album['label']} ({least_collected_album['year']})*  
-        *(Collected by {least_collected_album['have']} users)*
-        """
-    )
 
 
 
@@ -401,6 +370,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
