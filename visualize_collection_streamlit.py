@@ -90,6 +90,26 @@ else:
     fig_styles = px.bar(df_styles, x="Style", y="Count", title="Top 15 Styles")
     st.plotly_chart(fig_styles, use_container_width=True)
 
+
+# ---------------------
+# Pressing Thing
+#----------------------
+st.subheader("📀 Pressing Types in Collection")
+
+pressing_counts = {
+    "Original Press": df_filtered["is_original"].sum(),
+    "Repress/Reissue": df_filtered["is_reissue"].sum(),
+    "Limited Edition": df_filtered["is_limited"].sum(),
+}
+
+fig_pressing = px.pie(
+    names=list(pressing_counts.keys()),
+    values=list(pressing_counts.values()),
+    title="Proportion of Pressing Types"
+)
+st.plotly_chart(fig_pressing, use_container_width=True)
+
+
 # --------------------------
 # Growth Over Time
 # --------------------------
@@ -128,3 +148,4 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
