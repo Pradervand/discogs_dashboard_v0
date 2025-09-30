@@ -349,22 +349,34 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-
+# 🔹 Fetch and display marketplace prices
 prices = fetch_price_stats(release_id)
 if prices:
+    lowest = f"${prices['lowest']:.2f}" if prices['lowest'] else "N/A"
+    median = f"${prices['median']:.2f}" if prices['median'] else "N/A"
+    highest = f"${prices['highest']:.2f}" if prices['highest'] else "N/A"
+
     st.sidebar.markdown(
         f"""
-        <div style="text-align:center; margin-top:8px;">
-            <p style="font-size:90%; color:gray;">💵 Marketplace Prices (USD)</p>
-            <p style="font-size:85%;">
-            Lowest: {f"${prices['lowest']:.2f}" if prices['lowest'] else "N/A"}<br>
-            Median: {f"${prices['median']:.2f}" if prices['median'] else "N/A"}<br>
-            Highest: {f"${prices['highest']:.2f}" if prices['highest'] else "N/A"}
-            </p>
-        </div>
+        **💵 Marketplace Prices (USD)**  
+        • Lowest: {lowest}  
+        • Median: {median}  
+        • Highest: {highest}
         """,
         unsafe_allow_html=True
     )
+
+# 🔹 Fetch videos
+videos = fetch_release_videos(release_id)
+if videos:
+    st.sidebar.markdown("#### 🎥 Videos")
+    for v in videos:
+        uri = v.get("uri")
+        if uri:
+            if "youtube.com" in uri or "youtu.be" in uri:
+                st.sidebar.video(uri)
+            else:
+                st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
  # Fetch videos
 videos = fetch_release_videos(release_id)
@@ -402,6 +414,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
