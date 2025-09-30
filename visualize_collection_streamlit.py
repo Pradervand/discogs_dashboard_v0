@@ -275,118 +275,115 @@ def fetch_release_videos(release_id):
         st.warning(f"Could not fetch videos for release {release_id}: {e}")
         return []
 # --------------------------
-# Random Album in Sidebar (safe, metrics for prices)
+# Random Album in Sidebar
 # --------------------------
 
 # Ensure we have album covers available
 if "all_covers" not in st.session_state:
     st.session_state.all_covers = df.dropna(subset=["cover_url"])
 
-# Header + reload button (small column for button)
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album")
 with col2:
     if st.button("🔄", key="reload_album"):
-        st.session_state.random_album = None  # force re-pick (no full reload)
+        st.session_state.random_album = None
 
-# Pick or refresh random album (store single Series)
+# Pick or refresh random album
 if "random_album" not in st.session_state or st.session_state.random_album is None:
-    # sample(1).iloc[0] returns a Series (single row)
     st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
+
 
 album = st.session_state.random_album
 
-# Small helper to clean names like "Nature Morte (5)"
-def _clean_field(value):
+# Clean fields
+def clean_name(value):
     if not value or str(value).lower() == "nan":
         return "Unknown"
+    # If multiple names (list-like), join them
     if isinstance(value, (list, tuple)):
         return " / ".join(str(v).split(" (")[0] for v in value)
-    return str(value).split(" (")[0]
+    return str(value).split(" (")[0]  # strip (5), (6)
 
 cover_url = album.get("cover_url", "")
-release_id = album.get("release_id", None)
-artist = _clean_field(album.get("artists", album.get("artist", "Unknown")))
+release_id = album.get("release_id", "")
+artist = clean_name(album.get("artists", album.get("artist", "Unknown")))
 title = album.get("title", "Unknown")
-label = _clean_field(album.get("labels", album.get("label", "Unknown")))
+label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
+videos = album.get("videos", [])  # expect list of dicts
 
-link = f"https://www.discogs.com/release/{release_id}" if release_id else None
-
-# Display image (clickable link shown below) + metadata (safe Streamlit calls)
-if cover_url:
-    # give a fixed width so the image doesn't stretch too much in sidebar
-    st.sidebar.image(cover_url, width=200)
-
-# Title / artist as a clickable markdown link (keeps it simple and robust)
-if link:
-    st.sidebar.markdown(f"**[{artist} — {title}]({link})**")
-else:
-    st.sidebar.markdown(f"**{artist} — {title}**")
-
-# small caption for label and year
-st.sidebar.caption(f"{label}, {year}")
-
-# ---- Prices: fetch once, show as 3 KPI metrics ----
-def fetch_price_stats_once(rid):
-    """Return a dict with lowest/median/highest or None on fail."""
-    if not rid:
-        return None
+link = f"https://www.discogs.com/release/{release_id}"
+# 🔹 Function to fetch prices
+def fetch_price_stats(release_id):
+    url = f"https://api.discogs.com/marketplace/stats/{release_id}"
+    headers = {
+        "User-Agent": "Niolu's Discogs Dashboard",
+        "Authorization": f"Discogs token={st.secrets['DISCOGS_TOKEN']}"
+    }
     try:
-        url = f"https://api.discogs.com/marketplace/stats/{rid}"
-        headers = {
-            "User-Agent": "Niolu's Discogs Dashboard",
-            "Authorization": f"Discogs token={st.secrets['DISCOGS_TOKEN']}"
-        }
-        resp = requests.get(url, headers=headers, timeout=8)
-        resp.raise_for_status()
-        data = resp.json()
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        data = r.json()
         return {
             "lowest": data.get("lowest_price"),
             "median": data.get("median_price"),
             "highest": data.get("highest_price"),
         }
-    except Exception:
-        # avoid raising — UI should remain responsive if prices fail
+    except Exception as e:
+        st.sidebar.warning(f"⚠️ Price data unavailable")
         return None
 
-def _fmt_price(v):
-    try:
-        return f"${float(v):.2f}"
-    except Exception:
-        return "N/A"
+# Album info block
+st.sidebar.markdown(
+    f"""
+    <div style="text-align:center;">
+        <a href="{link}" target="_blank">
+            <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+        </a>
+        <p><b>{artist}</b><br>{title}<br>
+        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+# Fetch marketplace prices
+prices = fetch_price_stats(release_id)
 
-# Fetch prices (this is the single API call per random pick)
-prices = fetch_price_stats_once(release_id)
 
-if prices:
-    low = _fmt_price(prices.get("lowest"))
-    med = _fmt_price(prices.get("median"))
-    high = _fmt_price(prices.get("highest"))
 
-    # Show three compact metrics side-by-side in sidebar
-    pcol1, pcol2, pcol3 = st.sidebar.columns(3)
-    pcol1.metric("Lowest", low)
-    pcol2.metric("Median", med)
-    pcol3.metric("Highest", high)
-else:
-    # If no prices, show a small hint (doesn't break layout)
-    st.sidebar.info("Price data not available for this release.")
-
-# ---- Videos (kept after prices) ----
-# fetch_release_videos must be defined elsewhere in your file (it was earlier)
-videos = fetch_release_videos(release_id) if release_id else []
+ # Fetch videos
+videos = fetch_release_videos(release_id)
 if videos:
     st.sidebar.markdown("#### 🎥 Videos")
     for v in videos:
         uri = v.get("uri")
-        if uri and ("youtube.com" in uri or "youtu.be" in uri):
-            # Streamlit will embed the YouTube video
+        if "youtube.com" in uri or "youtu.be" in uri:
             st.sidebar.video(uri)
-        elif uri:
+        else:
             st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
+# Style reload button (no gray box)
+st.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        background: none !important;
+        border: none !important;
+        color: #e74c3c !important;
+        font-size: 20px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+    div.stButton > button:first-child:hover {
+        color: #c0392b !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # --------------------------
 # Data Preview
 # --------------------------
