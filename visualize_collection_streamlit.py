@@ -173,7 +173,7 @@ icons = {
     "Repress/Reissue": "🔁",
 }
 
-ICON_SCALE = 5  # 1 icon = 5%
+ICON_SCALE = 10  # 1 icon = 5%
 WRAP = 10      # max icons per line
 
 # Build icon rows for each type
@@ -359,6 +359,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
