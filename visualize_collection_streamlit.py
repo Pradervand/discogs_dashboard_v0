@@ -157,8 +157,9 @@ else:
     )
     fig_styles.update_layout(showlegend=False)
     st.plotly_chart(fig_styles, use_container_width=True)
+
 # ---------------------
-# Pressing Types (Unified Icon Block with Sorted Groups + Legend)
+# Pressing Types (Unified Icon Block with Sorted Groups + Legend, Centered, Bigger Icons)
 # ---------------------
 st.subheader("📀 Pressing Types in Collection")
 
@@ -173,10 +174,10 @@ icons = {
     "Repress/Reissue": "🔁",
 }
 
-ICON_SCALE = 10  # 1 icon = 5%
+ICON_SCALE = 5  # 1 icon = 5%
 WRAP = 10      # max icons per line
 
-# Build icon rows for each type
+# Build icon rows
 all_rows = []
 for press_type, count in pressing_counts.items():
     if total > 0 and count > 0:
@@ -185,19 +186,23 @@ for press_type, count in pressing_counts.items():
         icon_block = "".join([icons[press_type]] * num_icons)
         all_rows.append((press_type, percent, icon_block))
 
-# Sort rows so Originals first, then Reissues
+# Sort Originals first, Reissues second
 sorted_rows = sorted(all_rows, key=lambda x: 0 if x[0] == "Original Press" else 1)
 
-# Concatenate icon blocks in sorted order
+# Concatenate and wrap
 icons_string = "".join([row[2] for row in sorted_rows])
 wrapped_rows = [
     icons_string[i:i+WRAP] for i in range(0, len(icons_string), WRAP)
 ]
 
-# Display unified block
-st.markdown("<br>".join(wrapped_rows), unsafe_allow_html=True)
+# Display centered icons (bigger)
+icons_html = "<br>".join(wrapped_rows)
+st.markdown(
+    f"<div style='text-align:center; font-size:32px;'>{icons_html}</div>",
+    unsafe_allow_html=True
+)
 
-# Legend below
+# Legend below (smaller, gray, centered)
 legend_html = " ".join(
     [f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_rows]
 )
@@ -359,6 +364,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
