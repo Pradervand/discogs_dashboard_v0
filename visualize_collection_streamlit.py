@@ -45,7 +45,7 @@ st.success(f"Loaded {len(df_filtered)} records (after filtering)")
 # --------------------------
 st.subheader("📅 Records by Year")
 df_filtered["year"] = pd.to_numeric(df_filtered["year"], errors="coerce")
-df_year = df_filtered[df_filtered["year"] > 0]  # ignore year=0 and negatives
+df_year = df_filtered[df_filtered["year"] > 0]
 
 df_year = df_year["year"].value_counts().sort_index().reset_index()
 df_year.columns = ["Year", "Count"]
@@ -103,8 +103,9 @@ else:
 
     fig_styles = px.bar(
         df_styles,
-        x="Style",
-        y="Count",
+        x="Count",
+        y="Style",
+        orientation="h",
         color="Category",
         title="Top 15 Styles",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
@@ -129,8 +130,9 @@ pressing_df["Category"] = pressing_df["Type"].apply(lambda t: "Max" if t == max_
 
 fig_pressing = px.bar(
     pressing_df,
-    x="Type",
-    y="Count",
+    x="Count",
+    y="Type",
+    orientation="h",
     color="Category",
     title="Proportion of Pressing Types",
     color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
