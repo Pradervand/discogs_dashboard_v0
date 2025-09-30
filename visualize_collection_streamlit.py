@@ -40,11 +40,25 @@ if selected_style != "All":
 st.success(f"Loaded {len(df_filtered)} records (after filtering)")
 
 # --------------------------
+# Helper function
+# --------------------------
+def clean_styles(row):
+    """Remove 'Black Metal' if a more specific Black Metal sub-style is present."""
+    if pd.isna(row):
+        return None
+    styles = [s.strip() for s in row.split(",")]
+    if "Black Metal" in styles:
+        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
+        if more_specific:
+            styles = [s for s in styles if s != "Black Metal"]
+    return styles
+
+# --------------------------
 # Records by Year
 # --------------------------
 st.subheader("📅 Records by Year")
 df_filtered["year"] = pd.to_numeric(df_filtered["year"], errors="coerce")
-df_year = df_filtered[df_filtered["year"] > 0]  # ignore year=0 and negatives
+df_year = df_filtered[df_filtered["year"] > 0]
 
 df_year = df_year["year"].value_counts().sort_index().reset_index()
 df_year.columns = ["Year", "Count"]
@@ -52,10 +66,9 @@ df_year.columns = ["Year", "Count"]
 if df_year.empty:
     st.warning("No valid release years found in your collection.")
 else:
-    # Find max year
     max_count = df_year["Count"].max()
     df_year["Highlight"] = df_year["Count"].apply(
-        lambda x: "Most Productive Year" if x == max_count else "Other"
+        lambda x: "Max" if x == max_count else "Other"
     )
 
     fig_year = px.bar(
@@ -64,21 +77,11 @@ else:
         y="Count",
         color="Highlight",
         title="Records by Year",
-        color_discrete_map={
-            "Most Productive Year": "#e74c3c",  # bright red
-            "Other": "#95a5a6"  # neutral gray
-        }
+        color_discrete_map={"Max": "#e74c3c", "Other": "#95a5a6"}
     )
-
-    # Hide legend (since only 2 categories)
     fig_year.update_layout(showlegend=False)
-
     st.plotly_chart(fig_year, use_container_width=True)
 
-
-# --------------------------
-# Top Styles
-# --------------------------
 # --------------------------
 # Top Styles
 # --------------------------
@@ -111,10 +114,7 @@ else:
         orientation="h",
         title="Top 15 Styles",
         color="Highlight",
-        color_discrete_map={
-            "Max": "#e74c3c",   # red
-            "Other": "#95a5a6"  # gray
-        }
+        color_discrete_map={"Max": "#e74c3c", "Other": "#95a5a6"}
     )
     fig_styles.update_layout(showlegend=False, yaxis=dict(categoryorder="total ascending"))
     st.plotly_chart(fig_styles, use_container_width=True)
@@ -148,10 +148,7 @@ fig_pressing = px.bar(
     text="Count",
     title="Pressing Types in Your Collection",
     color="Highlight",
-    color_discrete_map={
-        "Max": "#e74c3c",
-        "Other": "#95a5a6"
-    }
+    color_discrete_map={"Max": "#e74c3c", "Other": "#95a5a6"}
 )
 
 fig_pressing.update_traces(textposition="outside")
@@ -185,7 +182,7 @@ else:
         title=f"Discogs Collection Growth Over Time "
               f"(showing {len(df_time)} / {len(df_filtered)} records)",
         color_discrete_map={
-            "New records": "#3498db",  # blue
+            "New records": "#95a5a6",  # gray
             "Cumulative": "#e74c3c"    # red
         }
     )
@@ -200,5 +197,3 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
-
-
