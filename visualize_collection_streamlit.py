@@ -69,14 +69,14 @@ with col3:
         st.metric("📅 Year Range", "N/A")
 
 with col4:
-    if "duration" in df_filtered.columns:
-        durations = df_filtered["duration"].dropna().apply(parse_duration)
-        total_seconds = durations.sum()
+    if "runtime_seconds" in df_filtered.columns:
+        total_seconds = df_filtered["runtime_seconds"].sum()
         hours, remainder = divmod(total_seconds, 3600)
         minutes, _ = divmod(remainder, 60)
         st.metric("⏱️ Total Runtime", f"{hours}h {minutes}m")
     else:
         st.metric("⏱️ Total Runtime", "N/A")
+
 
 # --------------------------
 # Records by Year
@@ -341,6 +341,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
