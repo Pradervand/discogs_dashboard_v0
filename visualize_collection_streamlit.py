@@ -214,6 +214,23 @@ def clean_name(name):
         return name
     return re.sub(r"\s*\(\d+\)$", "", name).strip()
 
+import requests
+
+DISCOGS_API_BASE = "https://api.discogs.com"
+
+def fetch_release_videos(release_id):
+    """Fetch video links from Discogs release API."""
+    url = f"{DISCOGS_API_BASE}/releases/{release_id}"
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
+        data = r.json()
+        videos = data.get("videos", [])
+        return [{"title": v.get("title"), "uri": v.get("uri")} for v in videos]
+    except Exception as e:
+        st.warning(f"Could not fetch videos for release {release_id}: {e}")
+        return []
+
 # --------------------------
 # Random Album Spotlight (Sidebar)
 # --------------------------
@@ -244,6 +261,7 @@ if album is not None:
     artists = clean_name(album.get("artists", "Unknown Artist"))
     labels = clean_name(album.get("labels", "Unknown Label"))
 
+    # Album info
     st.sidebar.markdown(
         f"""
         <a href="{link}" target="_blank">
@@ -257,7 +275,18 @@ if album is not None:
         unsafe_allow_html=True
     )
 
-# Style reload button
+    # Fetch videos
+    videos = fetch_release_videos(release_id)
+    if videos:
+        st.sidebar.markdown("#### 🎥 Videos")
+        for v in videos:
+            uri = v.get("uri")
+            if "youtube.com" in uri or "youtu.be" in uri:
+                st.sidebar.video(uri)
+            else:
+                st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
+
+# 🔄 style reload button
 st.markdown(
     """
     <style>
@@ -282,6 +311,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
