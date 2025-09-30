@@ -94,35 +94,30 @@ st.markdown("## 🎯 Collection Highlights")
 
 col1, col2 = st.columns(2)
 
-# 🎵 Oldest album in collection (ignoring year 0)
+# 🎵 Oldest album (ignoring year 0)
 oldest_album = df_filtered[df_filtered["year"] > 0].sort_values("year", ascending=True).iloc[0]
 
 with col1:
-    st.image(oldest_album["thumb_url"], width=150)
+    st.image(oldest_album["thumb_url"], width=120)
     st.markdown(
         f"""
-        **Artist:** {oldest_album['artist']}  
-        **Title:** {oldest_album['title']}  
-        **Label:** {oldest_album['label']}  
-        **Year:** {oldest_album['year']}  
+        **{oldest_album['artist_name']} – {oldest_album['title']}**  
+        *{oldest_album['label']} ({oldest_album['year']})*
         """
     )
 
-# 📀 Least collected album (based on Discogs community 'have' count)
+# 📀 Least collected album (lowest "have" count)
 least_collected_album = df_filtered.sort_values("have", ascending=True).iloc[0]
 
 with col2:
-    st.image(least_collected_album["thumb_url"], width=150)
+    st.image(least_collected_album["thumb_url"], width=120)
     st.markdown(
         f"""
-        **Artist:** {least_collected_album['artist']}  
-        **Title:** {least_collected_album['title']}  
-        **Label:** {least_collected_album['label']}  
-        **Year:** {least_collected_album['year']}  
+        **{least_collected_album['artist_name']} – {least_collected_album['title']}**  
+        *{least_collected_album['label']} ({least_collected_album['year']})*  
+        *(Collected by {least_collected_album['have']} users)*
         """
     )
-
-
 
 
 # --------------------------
@@ -405,6 +400,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
