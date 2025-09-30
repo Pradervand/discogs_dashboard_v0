@@ -55,24 +55,38 @@ else:
     fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
     st.plotly_chart(fig_year, use_container_width=True)
 
-
 # ==========================
 # Top Styles
 # ==========================
 st.subheader("🎼 Top Styles")
+
+def clean_styles(row):
+    """Remove 'Black Metal' if 'Atmospheric Black Metal' is also present."""
+    if pd.isna(row):
+        return None
+    styles = [s.strip() for s in row.split(",")]
+    if "Atmospheric Black Metal" in styles and "Black Metal" in styles:
+        styles = [s for s in styles if s != "Black Metal"]
+    return styles
+
 df_styles = (
     df_filtered["styles"]
     .dropna()
-    .str.split(", ")
-    .explode()
+    .apply(clean_styles)              # clean each row
+    .dropna()
+    .explode()                        # flatten into one style per row
     .value_counts()
     .head(15)
     .reset_index()
 )
 df_styles.columns = ["Style", "Count"]
 
-fig_styles = px.bar(df_styles, x="Style", y="Count", title="Top 15 Styles")
-st.plotly_chart(fig_styles, use_container_width=True)
+if df_styles.empty:
+    st.warning("No valid styles found in your collection.")
+else:
+    fig_styles = px.bar(df_styles, x="Style", y="Count", title="Top 15 Styles")
+    st.plotly_chart(fig_styles, use_container_width=True)
+
 
 # ==========================
 # Growth Over Time
@@ -111,5 +125,6 @@ else:
 # ==========================
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
