@@ -173,7 +173,7 @@ icons = {
     "Repress/Reissue": "🔁",
 }
 
-ICON_SCALE = 10  # 1 icon = 5%
+ICON_SCALE = 5  # 1 icon = 5%
 WRAP = 10      # max icons per line
 
 # Build icon rows for each type
@@ -194,11 +194,8 @@ wrapped_rows = [
     icons_string[i:i+WRAP] for i in range(0, len(icons_string), WRAP)
 ]
 
-icons_html = "<br>".join(wrapped_rows)
-st.markdown(
-    f"<div style='text-align:center; font-size:24px;'>{icons_html}</div>",
-    unsafe_allow_html=True
-)
+# Display unified block
+st.markdown("<br>".join(wrapped_rows), unsafe_allow_html=True)
 
 # Legend below
 legend_html = " ".join(
@@ -362,6 +359,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
