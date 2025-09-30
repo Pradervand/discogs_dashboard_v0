@@ -208,67 +208,54 @@ else:
                 f"and are excluded from the growth chart.")
 
 # --------------------------
-# Album Art Preview in Sidebar (grid)
+# Random Album Spotlight (Sidebar)
 # --------------------------
-if "all_covers" not in st.session_state:
-    st.session_state.all_covers = df.dropna(subset=["cover_url"])
-
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album")
 with col2:
-    if st.button("🔄", key="reload_covers"):
-        st.session_state.random_albums = None
+    if st.button("🔄", key="reload_random_album"):
+        st.session_state.random_album = None
 
-def pick_random_albums(df, n=12):
-    if len(df) <= n:
-        return df.index.tolist()
-    return random.sample(list(df.index), n)
+# Pick a single random album
+def pick_random_album(df):
+    if df.empty:
+        return None
+    return df.sample(1).iloc[0]
 
-if "random_albums" not in st.session_state or st.session_state.random_albums is None:
-    st.session_state.random_albums = pick_random_albums(st.session_state.all_covers)
+if "random_album" not in st.session_state or st.session_state.random_album is None:
+    st.session_state.random_album = pick_random_album(st.session_state.all_covers)
 
-cols = st.sidebar.columns(3)
-for i, idx in enumerate(st.session_state.random_albums):
-    row = st.session_state.all_covers.loc[idx]
-    cover_url = row["cover_url"]
-    release_id = row["release_id"]
+album = st.session_state.random_album
+if album is not None:
+    cover_url = album["cover_url"]
+    release_id = album["release_id"]
     link = f"https://www.discogs.com/release/{release_id}"
-    with cols[i % 3]:
-        st.markdown(
-            f"""
-            <a href="{link}" target="_blank">
-                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
+    title = album.get("title", "Unknown Title")
+    year = album.get("year", "N/A")
+    label = album.get("label", "Unknown Label")
+    artist = album.get("artist", "Unknown Artist")
 
-st.markdown(
-    """
-    <style>
-    div.stButton > button:first-child {
-        background: none;
-        border: none;
-        color: #e74c3c;
-        font-size: 20px;
-        padding: 0;
-        margin: 0;
-    }
-    div.stButton > button:first-child:hover {
-        color: #c0392b;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+    st.sidebar.markdown(
+        f"""
+        <a href="{link}" target="_blank">
+            <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+        </a>
+        <div style="font-size:14px; margin-bottom:4px;"><b>{artist}</b> — {title}</div>
+        <div style="font-size:12px; color:gray;">Year: {year}</div>
+        <div style="font-size:12px; color:gray;">Label: {label}</div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
