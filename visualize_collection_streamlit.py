@@ -275,27 +275,31 @@ def fetch_release_videos(release_id):
         st.warning(f"Could not fetch videos for release {release_id}: {e}")
         return []
 # --------------------------
-# Random Album in Sidebar (markdown block with prices)
+# Random Album in Sidebar (thumbnail + metadata + prices in same markdown block)
 # --------------------------
 
-# Ensure we have album covers available
+# Ensure we have album covers available (cached in session state)
 if "all_covers" not in st.session_state:
     st.session_state.all_covers = df.dropna(subset=["cover_url"])
 
+# Header + reload button in sidebar
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album")
 with col2:
-    if st.button("🔄", key="reload_album"):
-        st.session_state.random_album = None
+    # use the column's button method (keeps it in the sidebar column)
+    if col2.button("🔄", key="reload_album"):
+        st.session_state.random_album = None  # only reset the random pick
 
-# Pick or refresh random album
+# Pick or refresh a single random album (store a Series)
 if "random_album" not in st.session_state or st.session_state.random_album is None:
+    # sample(1).iloc[0] -> returns a pandas Series (single row)
     st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
 
 album = st.session_state.random_album
 
-def clean_name(value):
+# small helper to clean Discogs suffixes like " (5)"
+def _clean_field(value):
     if not value or str(value).lower() == "nan":
         return "Unknown"
     if isinstance(value, (list, tuple)):
@@ -304,18 +308,19 @@ def clean_name(value):
 
 cover_url = album.get("cover_url", "")
 release_id = album.get("release_id", None)
-artist = clean_name(album.get("artists", album.get("artist", "Unknown")))
+artist = _clean_field(album.get("artists", album.get("artist", "Unknown")))
 title = album.get("title", "Unknown")
-label = clean_name(album.get("labels", album.get("label", "Unknown")))
+label = _clean_field(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
 
 link = f"https://www.discogs.com/release/{release_id}" if release_id else None
 
-# --- Price fetch ---
-def fetch_price_stats(release_id):
-    if not release_id:
+# --- Robust price fetching (single API call per random pick) ---
+def fetch_price_stats_for_release(rid):
+    """Fetch marketplace stats for a release and return numeric lowest/median/highest or None."""
+    if not rid:
         return None
-    url = f"https://api.discogs.com/marketplace/stats/{release_id}"
+    url = f"https://api.discogs.com/marketplace/stats/{rid}?curr_abbr=USD"
     headers = {
         "User-Agent": "Niolu's Discogs Dashboard",
         "Authorization": f"Discogs token={st.secrets['DISCOGS_TOKEN']}"
@@ -324,53 +329,86 @@ def fetch_price_stats(release_id):
         r = requests.get(url, headers=headers, timeout=8)
         r.raise_for_status()
         data = r.json()
-        return {
-            "lowest": data.get("lowest_price"),
-            "median": data.get("median_price"),
-            "highest": data.get("highest_price"),
-        }
     except Exception:
         return None
 
-def fmt_price(v):
+    def _extract(v):
+        """Accepts various shapes: number, string, or dict {'value':..., 'currency':...}"""
+        if v is None:
+            return None
+        # direct numeric or string
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return float(v.replace(",", "").strip())
+            except Exception:
+                return None
+        # expected dict shape
+        if isinstance(v, dict):
+            # common keys tried in order
+            for k in ("value", "price", "amount"):
+                if k in v and v[k] is not None:
+                    try:
+                        return float(v[k])
+                    except Exception:
+                        # string with commas?
+                        try:
+                            return float(str(v[k]).replace(",", "").strip())
+                        except Exception:
+                            continue
+        return None
+
+    # Try several possible key names (Discogs has had variations)
+    lowest = _extract(data.get("lowest_price") or data.get("lowest") or data.get("low"))
+    median = _extract(data.get("median_price") or data.get("median") or data.get("mid"))
+    highest = _extract(data.get("highest_price") or data.get("highest") or data.get("high"))
+
+    # If all None, return None to indicate no usable price info
+    if lowest is None and median is None and highest is None:
+        return None
+    return {"lowest": lowest, "median": median, "highest": highest}
+
+def _fmt_price(val):
     try:
-        return f"${float(v):.2f}"
+        return f"${float(val):.2f}"
     except Exception:
         return "N/A"
 
-prices = fetch_price_stats(release_id)
+prices = fetch_price_stats_for_release(release_id)
 
-# --- Markdown block with everything together ---
-price_block = ""
+# --- Build a single markdown block with image + metadata + prices ---
+price_block_html = ""
 if prices:
-    low = fmt_price(prices.get("lowest"))
-    med = fmt_price(prices.get("median"))
-    high = fmt_price(prices.get("highest"))
-    price_block = f"""
-    <p style="margin-top:6px; font-size:90%;">
-        💵 <b>Prices:</b><br>
-        Lowest: <span style="color:#27ae60;">{low}</span><br>
-        Median: <span style="color:#2980b9;">{med}</span><br>
-        Highest: <span style="color:#e74c3c;">{high}</span>
-    </p>
+    low_s = _fmt_price(prices.get("lowest"))
+    med_s = _fmt_price(prices.get("median"))
+    high_s = _fmt_price(prices.get("highest"))
+    price_block_html = f"""
+        <div style="margin-top:6px; font-size:90%; line-height:1.2;">
+            💵 <b>Prices (USD)</b><br>
+            Lowest: <span style="color:#27ae60;">{low_s}</span><br>
+            Median: <span style="color:#2980b9;">{med_s}</span><br>
+            Highest: <span style="color:#e74c3c;">{high_s}</span>
+        </div>
     """
 
+# show thumbnail + metadata + price block in one markdown block
 st.sidebar.markdown(
     f"""
     <div style="text-align:center;">
-        <a href="{link}" target="_blank">
+        {"<a href='"+link+"' target='_blank'>" if link else ""}
             <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-        </a>
-        <p><b>{artist}</b><br>{title}<br>
-        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
-        {price_block}
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);"/>
+        {"</a>" if link else ""}
+        <p style="margin:6px 0 0 0;"><b>{artist}</b><br>{title}</p>
+        <p style="margin:4px 0 0 0; color:gray; font-size:90%;">{label}, {year}</p>
+        {price_block_html}
     </div>
     """,
     unsafe_allow_html=True
 )
 
-# 🎥 Videos
+# --- videos (kept below the markdown block) ---
 videos = fetch_release_videos(release_id) if release_id else []
 if videos:
     st.sidebar.markdown("#### 🎥 Videos")
@@ -381,11 +419,34 @@ if videos:
         elif uri:
             st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
+# --- Styling: remove the box around the sidebar reload button only ---
+st.sidebar.markdown(
+    """
+    <style>
+    /* Target sidebar buttons (try to be specific so main buttons are unaffected) */
+    aside .stButton button, section[aria-label="Sidebar"] .stButton button {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        color: #e74c3c !important;
+        font-size: 18px !important;
+    }
+    aside .stButton button:hover, section[aria-label="Sidebar"] .stButton button:hover {
+        color: #c0392b !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # --------------------------
 # Data Preview
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
