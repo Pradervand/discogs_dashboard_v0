@@ -97,18 +97,31 @@ else:
 st.subheader("📀 Pressing Types in Collection")
 
 pressing_counts = {
-    "Original Press": df_filtered["is_original"].sum(),
-    "Repress/Reissue": df_filtered["is_reissue"].sum(),
-    "Limited Edition": df_filtered["is_limited"].sum(),
+    "Original Press": int(df_filtered["is_original"].sum()),
+    "Repress/Reissue": int(df_filtered["is_reissue"].sum()),
+    "Limited Edition": int(df_filtered["is_limited"].sum()),
 }
 
-fig_pressing = px.pie(
-    names=list(pressing_counts.keys()),
-    values=list(pressing_counts.values()),
-    title="Proportion of Pressing Types"
+df_pressing = pd.DataFrame(
+    list(pressing_counts.items()),
+    columns=["Pressing Type", "Count"]
 )
-st.plotly_chart(fig_pressing, use_container_width=True)
 
+fig_pressing = px.bar(
+    df_pressing,
+    x="Count",
+    y="Pressing Type",
+    orientation="h",
+    text="Count",
+    title="Proportion of Pressing Types",
+)
+
+fig_pressing.update_layout(
+    yaxis=dict(categoryorder="total ascending"),
+    showlegend=False
+)
+
+st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
 # Growth Over Time
@@ -148,4 +161,5 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
