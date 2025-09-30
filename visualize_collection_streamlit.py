@@ -37,18 +37,24 @@ if selected_style != "All":
     df_filtered = df_filtered[df_filtered["styles"].str.contains(selected_style, na=False)]
 
 st.success(f"Loaded {len(df_filtered)} records (after filtering)")
-
 # ==========================
 # Records by Year
 # ==========================
 st.subheader("📅 Records by Year")
-df_year = (
-    df_filtered["year"].dropna().astype(int).value_counts().sort_index().reset_index()
-)
+
+# Clean up year column
+df_filtered["year"] = pd.to_numeric(df_filtered["year"], errors="coerce")
+df_year = df_filtered[df_filtered["year"] > 0]  # ignore 0 and negatives
+
+df_year = df_year["year"].value_counts().sort_index().reset_index()
 df_year.columns = ["Year", "Count"]
 
-fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
-st.plotly_chart(fig_year, use_container_width=True)
+if df_year.empty:
+    st.warning("No valid release years found in your collection.")
+else:
+    fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
+    st.plotly_chart(fig_year, use_container_width=True)
+
 
 # ==========================
 # Top Styles
@@ -105,4 +111,5 @@ else:
 # ==========================
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
