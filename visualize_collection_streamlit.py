@@ -32,6 +32,21 @@ df["added"] = pd.to_datetime(
 # Sidebar filters
 # --------------------------
 df_filtered=df
+def parse_duration(duration_str):
+    """Convert Discogs duration string (MM:SS or HH:MM:SS) into seconds."""
+    if not isinstance(duration_str, str) or not duration_str.strip():
+        return 0
+    parts = duration_str.split(":")
+    try:
+        parts = [int(p) for p in parts]
+        if len(parts) == 2:  # MM:SS
+            return parts[0] * 60 + parts[1]
+        elif len(parts) == 3:  # HH:MM:SS
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+        else:
+            return 0
+    except Exception:
+        return 0
 
 # --------------------------
 # Quick Synthesis / Stats
@@ -54,13 +69,14 @@ with col3:
         st.metric("📅 Year Range", "N/A")
 
 with col4:
-    if "is_original" in df_filtered.columns and "is_reissue" in df_filtered.columns:
-        originals = int(df_filtered["is_original"].sum())
-        reissues = int(df_filtered["is_reissue"].sum())
-        st.metric("🔄 Originals vs Reissues", f"{originals} / {reissues}")
+    if "duration" in df_filtered.columns:
+        durations = df_filtered["duration"].dropna().apply(parse_duration)
+        total_seconds = durations.sum()
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        st.metric("⏱️ Total Runtime", f"{hours}h {minutes}m")
     else:
-        st.metric("🔄 Originals vs Reissues", "N/A")
-
+        st.metric("⏱️ Total Runtime", "N/A")
 
 # --------------------------
 # Records by Year
@@ -325,6 +341,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
