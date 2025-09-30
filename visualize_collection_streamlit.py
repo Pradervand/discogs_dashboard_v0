@@ -114,32 +114,6 @@ else:
     st.plotly_chart(fig_year, use_container_width=True)
 
 
-# --- Show oldest record info ---
-oldest = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
-thumb_url = oldest.get("thumb_url", "")
-release_id = oldest.get("release_id", "")
-
-artist = clean_name(oldest.get("artists", oldest.get("artist", "Unknown")))
-title = oldest.get("title", "Unknown")
-label = clean_name(oldest.get("labels", oldest.get("label", "Unknown")))
-year = oldest.get("year", "Unknown")
-link = f"https://www.discogs.com/release/{release_id}" if release_id else "#"
-
-st.markdown("**📀 Oldest Record in Collection**")
-
-st.markdown(
-    f"""
-    <div style="text-align:center; max-width:150px; margin:auto;">
-        <a href="{link}" target="_blank">
-            <img src="{thumb_url}" style="width:100%; border-radius:6px; margin-bottom:6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);"/>
-        </a>
-        <p><b>{artist}</b><br>{title}<br>
-        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 
 
 # --------------------------
@@ -393,6 +367,7 @@ st.markdown(
 st.subheader("🔍 Data")
 
 st.dataframe(df_filtered, use_container_width=True)
+
 
 
 
