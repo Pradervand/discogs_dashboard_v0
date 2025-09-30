@@ -194,12 +194,11 @@ wrapped_rows = [
     icons_string[i:i+WRAP] for i in range(0, len(icons_string), WRAP)
 ]
 
-# Display unified block
+icons_html = "<br>".join(wrapped_rows)
 st.markdown(
     f"<div style='text-align:center; font-size:24px;'>{icons_html}</div>",
     unsafe_allow_html=True
 )
-
 
 # Legend below
 legend_html = " ".join(
