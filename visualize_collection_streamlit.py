@@ -269,8 +269,8 @@ if album is not None:
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
         </a>
         <div style="font-size:14px; margin-bottom:4px;"><b>{artists}</b> — {title}</div>
-        <div style="font-size:12px; color:gray;">Year: {year}</div>
-        <div style="font-size:12px; color:gray;">Label: {labels}</div>
+        <div style="font-size:12px; color:lightgray;">Year: {year}</div>
+        <div style="font-size:12px; color:lightgray;">Label: {labels}</div>
         """,
         unsafe_allow_html=True
     )
@@ -311,6 +311,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
