@@ -103,7 +103,7 @@ df_styles.columns = ["Style", "Count"]
 if df_styles.empty:
     st.warning("No valid styles found in your collection.")
 else:
-    df_styles = df_styles.sort_values("Count", ascending=False)
+    df_styles = df_styles.sort_values("Count", ascending=True)
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
     df_styles["Category"] = df_styles["Style"].apply(lambda s: "Max" if s == max_style else "Other")
 
@@ -139,7 +139,7 @@ df_pressing = pd.DataFrame(
 if df_pressing.empty or total == 0:
     st.warning("No pressing type info available.")
 else:
-    df_pressing = df_pressing.sort_values("Percent", ascending=False)
+    df_pressing = df_pressing.sort_values("Percent", ascending=True)
     max_type = df_pressing.loc[df_pressing["Percent"].idxmax(), "Type"]
     df_pressing["Category"] = df_pressing["Type"].apply(lambda t: "Max" if t == max_type else "Other")
 
@@ -253,6 +253,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
