@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import random
 from collection_dump import fetch_all_releases
 
 USERNAME = st.secrets["DISCOGS_USERNAME"]
@@ -39,53 +40,12 @@ if selected_style != "All":
 
 st.success(f"Loaded {len(df_filtered)} records (after filtering)")
 
-import random
-
-st.sidebar.subheader("🎨 Random Album Covers")
-
-# Pick 12 random rows
-if len(df_filtered) >= 12:
-    sample_df = df_filtered.sample(12, random_state=None)
-else:
-    sample_df = df_filtered
-
-for _, row in sample_df.iterrows():
-    cover_url = row.get("thumb_url") or row.get("cover_url")
-    release_id = row.get("release_id")
-    title = row.get("title")
-
-    if cover_url and release_id:
-        link = f"https://www.discogs.com/release/{release_id}"
-        st.sidebar.markdown(
-            f"""
-            <a href="{link}" target="_blank">
-                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-            </a>
-            <div style="text-align:center; font-size:11px; margin-bottom:12px;">{title}</div>
-            """,
-            unsafe_allow_html=True
-        )
-
-# --------------------------
-# Helper function
-# --------------------------
-def clean_styles(row):
-    """Remove 'Black Metal' if a more specific Black Metal sub-style is present."""
-    if pd.isna(row):
-        return None
-    styles = [s.strip() for s in row.split(",")]
-    if "Black Metal" in styles:
-        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
-        if more_specific:
-            styles = [s for s in styles if s != "Black Metal"]
-    return styles
-
 # --------------------------
 # Records by Year
 # --------------------------
 st.subheader("📅 Records by Year")
 df_filtered["year"] = pd.to_numeric(df_filtered["year"], errors="coerce")
-df_year = df_filtered[df_filtered["year"] > 0]
+df_year = df_filtered[df_filtered["year"] > 0]  # ignore year=0 and negatives
 
 df_year = df_year["year"].value_counts().sort_index().reset_index()
 df_year.columns = ["Year", "Count"]
@@ -93,16 +53,14 @@ df_year.columns = ["Year", "Count"]
 if df_year.empty:
     st.warning("No valid release years found in your collection.")
 else:
-    max_count = df_year["Count"].max()
-    df_year["Highlight"] = df_year["Count"].apply(
-        lambda x: "Max" if x == max_count else "Other"
-    )
+    max_year = df_year.loc[df_year["Count"].idxmax(), "Year"]
+    df_year["Category"] = df_year["Year"].apply(lambda y: "Max" if y == max_year else "Other")
 
     fig_year = px.bar(
         df_year,
         x="Year",
         y="Count",
-        color="Highlight",
+        color="Category",
         title="Records by Year",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
@@ -113,6 +71,17 @@ else:
 # Top Styles
 # --------------------------
 st.subheader("🎼 Top Styles")
+
+def clean_styles(row):
+    """Remove 'Black Metal' if a more specific Black Metal sub-style is present."""
+    if pd.isna(row):
+        return None
+    styles = [s.strip() for s in row.split(",")]
+    if "Black Metal" in styles:
+        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
+        if more_specific:
+            styles = [s for s in styles if s != "Black Metal"]
+    return styles
 
 df_styles = (
     df_filtered["styles"]
@@ -129,21 +98,18 @@ df_styles.columns = ["Style", "Count"]
 if df_styles.empty:
     st.warning("No valid styles found in your collection.")
 else:
-    max_count = df_styles["Count"].max()
-    df_styles["Highlight"] = df_styles["Count"].apply(
-        lambda x: "Max" if x == max_count else "Other"
-    )
+    max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
+    df_styles["Category"] = df_styles["Style"].apply(lambda s: "Max" if s == max_style else "Other")
 
     fig_styles = px.bar(
         df_styles,
-        x="Count",
-        y="Style",
-        orientation="h",
+        x="Style",
+        y="Count",
+        color="Category",
         title="Top 15 Styles",
-        color="Highlight",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
-    fig_styles.update_layout(showlegend=False, yaxis=dict(categoryorder="total ascending"))
+    fig_styles.update_layout(showlegend=False)
     st.plotly_chart(fig_styles, use_container_width=True)
 
 # ---------------------
@@ -157,29 +123,19 @@ pressing_counts = {
     "Limited Edition": df_filtered["is_limited"].sum(),
 }
 
-df_pressing = pd.DataFrame(
-    list(pressing_counts.items()),
-    columns=["Pressing Type", "Count"]
-)
-
-max_count = df_pressing["Count"].max()
-df_pressing["Highlight"] = df_pressing["Count"].apply(
-    lambda x: "Max" if x == max_count else "Other"
-)
+pressing_df = pd.DataFrame(list(pressing_counts.items()), columns=["Type", "Count"])
+max_type = pressing_df.loc[pressing_df["Count"].idxmax(), "Type"]
+pressing_df["Category"] = pressing_df["Type"].apply(lambda t: "Max" if t == max_type else "Other")
 
 fig_pressing = px.bar(
-    df_pressing,
-    x="Count",
-    y="Pressing Type",
-    orientation="h",
-    text="Count",
-    title="Pressing Types in Your Collection",
-    color="Highlight",
+    pressing_df,
+    x="Type",
+    y="Count",
+    color="Category",
+    title="Proportion of Pressing Types",
     color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
 )
-
-fig_pressing.update_traces(textposition="outside")
-fig_pressing.update_layout(showlegend=False, yaxis=dict(categoryorder="total ascending"))
+fig_pressing.update_layout(showlegend=False)
 st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
@@ -210,7 +166,7 @@ else:
               f"(showing {len(df_time)} / {len(df_filtered)} records)",
         color_discrete_map={
             "New records": "#3498db",  # blue
-            "Cumulative": "#e74c3c"    # red
+            "Cumulative": "#e74c3c"   # red
         }
     )
     st.plotly_chart(fig_growth, use_container_width=True)
@@ -220,9 +176,41 @@ else:
                 f"and are excluded from the growth chart.")
 
 # --------------------------
+# Sidebar Album Covers
+# --------------------------
+st.sidebar.subheader("🎨 Random Album Covers")
+
+if st.sidebar.button("🔄 Reload Covers"):
+    st.session_state["cover_seed"] = random.randint(0, 100000)
+
+seed = st.session_state.get("cover_seed", 42)
+
+if len(df_filtered) >= 4:
+    sample_df = df_filtered.sample(4, random_state=seed)
+else:
+    sample_df = df_filtered
+
+cols = st.sidebar.columns(2)
+for idx, (_, row) in enumerate(sample_df.iterrows()):
+    cover_url = row.get("thumb_url") or row.get("cover_url")
+    release_id = row.get("release_id")
+    title = row.get("title")
+
+    if cover_url and release_id:
+        link = f"https://www.discogs.com/release/{release_id}"
+        with cols[idx % 2]:
+            st.markdown(
+                f"""
+                <a href="{link}" target="_blank">
+                    <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+                </a>
+                <div style="text-align:center; font-size:11px; margin-bottom:12px;">{title}</div>
+                """,
+                unsafe_allow_html=True
+            )
+
+# --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
-
-
