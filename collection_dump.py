@@ -113,6 +113,7 @@ def fetch_all_releases(username, folder_id=0):
                 "is_reissue": is_reissue,
                 "is_original": is_original
             }
+            total_seconds = fetch_release_duration(release_id)
             all_records.append(rec)
        
         pagination = data.get("pagination", {})
@@ -128,5 +129,6 @@ if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
+
 
 
