@@ -86,15 +86,14 @@ for i, idx in enumerate(st.session_state.random_albums):
     link = f"https://www.discogs.com/release/{release_id}"
     with cols[i % 3]:
         st.markdown(
-            f"""
-            <a href="{link}" target="_blank">
-                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-            </a>
-            """,
+            f(
+                '<a href="{link}" target="_blank">'
+                f'<img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;'
+                'box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>'
+                '</a>'
+            ),
             unsafe_allow_html=True
         )
-
 # Style reload button
 st.markdown(
     """
@@ -130,6 +129,7 @@ else:
     colors = ["#e74c3c" if y == max_year else "#3498db" for y in df_year["Year"]]
     fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
     fig_year.update_traces(marker_color=colors)
+    fig_year.update_layout(height=500)
     st.plotly_chart(fig_year, use_container_width=True)
 
 # --------------------------
@@ -166,7 +166,7 @@ else:
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
     colors = ["#e74c3c" if s == max_style else "#3498db" for s in df_styles["Style"]]
     fig_styles.update_traces(marker_color=colors)
-    fig_styles.update_layout(yaxis=dict(autorange="reversed"))
+    fig_styles.update_layout(yaxis=dict(autorange="reversed"), height=600)
     st.plotly_chart(fig_styles, use_container_width=True)
 
 # ---------------------
@@ -198,7 +198,7 @@ fig_pressing = px.bar(
 max_type = df_pressing.loc[df_pressing["Proportion (%)"].idxmax(), "Type"]
 colors = ["#e74c3c" if t == max_type else "#3498db" for t in df_pressing["Type"]]
 fig_pressing.update_traces(marker_color=colors, texttemplate="%{text:.1f}%")
-fig_pressing.update_layout(yaxis=dict(autorange="reversed"))
+fig_pressing.update_layout(yaxis=dict(autorange="reversed"), height=400)
 st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
@@ -228,6 +228,7 @@ else:
     )
     fig_growth.update_traces(line=dict(color="#e74c3c"), selector=dict(name="New records"))
     fig_growth.update_traces(line=dict(color="#3498db"), selector=dict(name="Cumulative"))
+    fig_growth.update_layout(height=500)
     st.plotly_chart(fig_growth, use_container_width=True)
 
     if missing_added > 0:
