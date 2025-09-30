@@ -314,6 +314,25 @@ year = album.get("year", "Unknown")
 videos = album.get("videos", [])  # expect list of dicts
 
 link = f"https://www.discogs.com/release/{release_id}"
+# 🔹 Function to fetch prices
+def fetch_price_stats(release_id):
+    url = f"https://api.discogs.com/marketplace/stats/{release_id}"
+    headers = {
+        "User-Agent": "Niolu's Discogs Dashboard",
+        "Authorization": f"Discogs token={st.secrets['DISCOGS_TOKEN']}"
+    }
+    try:
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        data = r.json()
+        return {
+            "lowest": data.get("lowest_price"),
+            "median": data.get("median_price"),
+            "highest": data.get("highest_price"),
+        }
+    except Exception as e:
+        st.sidebar.warning(f"⚠️ Price data unavailable")
+        return None
 
 # Album info block
 st.sidebar.markdown(
@@ -330,6 +349,22 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+# 🔹 Fetch and display marketplace prices
+prices = fetch_price_stats(release_id)
+if prices:
+    st.sidebar.markdown(
+        f"""
+        <div style="text-align:center; margin-top:8px;">
+            <p style="font-size:90%; color:gray;">💵 Marketplace Prices (USD)</p>
+            <p style="font-size:85%;">
+            Lowest: {f"${prices['lowest']:.2f}" if prices['lowest'] else "N/A"}<br>
+            Median: {f"${prices['median']:.2f}" if prices['median'] else "N/A"}<br>
+            Highest: {f"${prices['highest']:.2f}" if prices['highest'] else "N/A"}
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
  # Fetch videos
 videos = fetch_release_videos(release_id)
@@ -367,6 +402,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
