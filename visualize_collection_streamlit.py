@@ -349,6 +349,22 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+# 🎵 Marketplace Prices
+prices = fetch_price_stats(release_id)
+if prices:
+    lowest = f"${prices['lowest']:.2f}" if prices['lowest'] else "N/A"
+    median = f"${prices['median']:.2f}" if prices['median'] else "N/A"
+    highest = f"${prices['highest']:.2f}" if prices['highest'] else "N/A"
+
+    st.sidebar.markdown(
+        f"""
+        **💵 Marketplace Prices (USD)**  
+        • Lowest: {lowest}  
+        • Median: {median}  
+        • Highest: {highest}
+        """,
+        unsafe_allow_html=True
+    )
 
  # Fetch videos
 videos = fetch_release_videos(release_id)
@@ -436,22 +452,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# 🎵 Marketplace Prices
-prices = fetch_price_stats(release_id)
-if prices:
-    lowest = f"${prices['lowest']:.2f}" if prices['lowest'] else "N/A"
-    median = f"${prices['median']:.2f}" if prices['median'] else "N/A"
-    highest = f"${prices['highest']:.2f}" if prices['highest'] else "N/A"
-
-    st.sidebar.markdown(
-        f"""
-        **💵 Marketplace Prices (USD)**  
-        • Lowest: {lowest}  
-        • Median: {median}  
-        • Highest: {highest}
-        """,
-        unsafe_allow_html=True
-    )
 
 # 🎥 Videos
 videos = fetch_release_videos(release_id)
@@ -493,6 +493,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
