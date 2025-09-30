@@ -205,7 +205,7 @@ st.markdown(
     f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>",
     unsafe_allow_html=True
 )
-down(f"**{press_type}**: 0%")
+
 
 # --------------------------
 # Growth Over Time
@@ -359,6 +359,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
