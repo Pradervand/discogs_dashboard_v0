@@ -31,20 +31,7 @@ df["added"] = pd.to_datetime(
 # --------------------------
 # Sidebar filters
 # --------------------------
-st.sidebar.header("Filters")
-all_genres = sorted(set(g for g in df["genres"].dropna().str.split(", ").explode()))
-all_styles = sorted(set(s for s in df["styles"].dropna().str.split(", ").explode()))
-
-selected_genre = st.sidebar.selectbox("Filter by Genre", options=["All"] + all_genres)
-selected_style = st.sidebar.selectbox("Filter by Style", options=["All"] + all_styles)
-
-df_filtered = df.copy()
-if selected_genre != "All":
-    df_filtered = df_filtered[df_filtered["genres"].str.contains(selected_genre, na=False)]
-if selected_style != "All":
-    df_filtered = df_filtered[df_filtered["styles"].str.contains(selected_style, na=False)]
-
-st.success(f"Loaded {len(df_filtered)} records (after filtering)")
+df_filtered=df
 
 # --------------------------
 # Records by Year
@@ -253,6 +240,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
