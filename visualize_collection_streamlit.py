@@ -52,7 +52,14 @@ df_year.columns = ["Year", "Count"]
 if df_year.empty:
     st.warning("No valid release years found in your collection.")
 else:
-    fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
+    fig_year = px.bar(
+        df_year,
+        x="Year",
+        y="Count",
+        title="Records by Year",
+        color="Count",
+        color_continuous_scale="Blues"
+    )
     st.plotly_chart(fig_year, use_container_width=True)
 
 # --------------------------
@@ -65,7 +72,6 @@ def clean_styles(row):
     if pd.isna(row):
         return None
     styles = [s.strip() for s in row.split(",")]
-    # If there is another '... Black Metal' style, drop plain 'Black Metal'
     if "Black Metal" in styles:
         more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
         if more_specific:
@@ -87,19 +93,27 @@ df_styles.columns = ["Style", "Count"]
 if df_styles.empty:
     st.warning("No valid styles found in your collection.")
 else:
-    fig_styles = px.bar(df_styles, x="Style", y="Count", title="Top 15 Styles")
+    fig_styles = px.bar(
+        df_styles,
+        x="Count",
+        y="Style",
+        orientation="h",
+        title="Top 15 Styles",
+        color="Count",
+        color_continuous_scale="Viridis"
+    )
+    fig_styles.update_layout(yaxis=dict(categoryorder="total ascending"))
     st.plotly_chart(fig_styles, use_container_width=True)
 
-
 # ---------------------
-# Pressing Thing
-#----------------------
+# Pressing Types
+# ---------------------
 st.subheader("📀 Pressing Types in Collection")
 
 pressing_counts = {
-    "Original Press": int(df_filtered["is_original"].sum()),
-    "Repress/Reissue": int(df_filtered["is_reissue"].sum()),
-    "Limited Edition": int(df_filtered["is_limited"].sum()),
+    "Original Press": df_filtered["is_original"].sum(),
+    "Repress/Reissue": df_filtered["is_reissue"].sum(),
+    "Limited Edition": df_filtered["is_limited"].sum(),
 }
 
 df_pressing = pd.DataFrame(
@@ -107,20 +121,25 @@ df_pressing = pd.DataFrame(
     columns=["Pressing Type", "Count"]
 )
 
+color_map = {
+    "Original Press": "#2ecc71",   # green
+    "Repress/Reissue": "#e67e22",  # orange
+    "Limited Edition": "#9b59b6"   # purple
+}
+
 fig_pressing = px.bar(
     df_pressing,
     x="Count",
     y="Pressing Type",
     orientation="h",
     text="Count",
-    title="Proportion of Pressing Types",
+    title="Pressing Types in Your Collection",
+    color="Pressing Type",
+    color_discrete_map=color_map
 )
 
-fig_pressing.update_layout(
-    yaxis=dict(categoryorder="total ascending"),
-    showlegend=False
-)
-
+fig_pressing.update_traces(textposition="outside")
+fig_pressing.update_layout(yaxis=dict(categoryorder="total ascending"))
 st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
@@ -148,7 +167,11 @@ else:
         x="Month",
         y=["New records", "Cumulative"],
         title=f"Discogs Collection Growth Over Time "
-              f"(showing {len(df_time)} / {len(df_filtered)} records)"
+              f"(showing {len(df_time)} / {len(df_filtered)} records)",
+        color_discrete_map={
+            "New records": "#3498db",  # blue
+            "Cumulative": "#e74c3c"    # red
+        }
     )
     st.plotly_chart(fig_growth, use_container_width=True)
 
@@ -161,5 +184,3 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
-
-
