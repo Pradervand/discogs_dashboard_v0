@@ -7,24 +7,44 @@ from collection_dump import fetch_all_releases
 
 USERNAME = st.secrets["DISCOGS_USERNAME"]
 
+# --------------------------
+# Page setup
+# --------------------------
 st.set_page_config(page_title="Discogs Collection Dashboard", layout="wide")
 st.title("📀 My Discogs Collection Dashboard")
 
 # --------------------------
-# Fetch collection
+# Cache API + data prep
 # --------------------------
-with st.spinner("Fetching data from Discogs API..."):
-    df = fetch_all_releases(USERNAME)
+@st.cache_data
+def load_collection(username):
+    return fetch_all_releases(username)
 
-# Parse dates safely
-df["added"] = pd.to_datetime(
-    df["added"],
-    errors="coerce",
-    utc=True,
-    infer_datetime_format=True
-)
+@st.cache_data
+def extract_covers(df):
+    return df.dropna(subset=["cover_url"])
 
+@st.cache_data
+def parse_dates(df):
+    df = df.copy()
+    df["added"] = pd.to_datetime(
+        df["added"], errors="coerce", utc=True, infer_datetime_format=True
+    )
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")
+    return df
+
+# --------------------------
+# Load data
+# --------------------------
+with st.spinner("Fetching data from Discogs API... (cached after first run)"):
+    df = load_collection(USERNAME)
+
+df = parse_dates(df)
+covers_df = extract_covers(df)
+
+# --------------------------
 # Sidebar filters
+# --------------------------
 st.sidebar.header("Filters")
 all_genres = sorted(set(g for g in df["genres"].dropna().str.split(", ").explode()))
 all_styles = sorted(set(s for s in df["styles"].dropna().str.split(", ").explode()))
@@ -41,12 +61,65 @@ if selected_style != "All":
 st.success(f"Loaded {len(df_filtered)} records (after filtering)")
 
 # --------------------------
+# Random Album Covers (Sidebar)
+# --------------------------
+col1, col2 = st.sidebar.columns([5, 1])
+with col1:
+    st.markdown("### 🎨 Random Album Covers")
+with col2:
+    if st.button("🔄", key="reload_covers"):
+        st.session_state.random_albums = None
+
+def pick_random_albums(df, n=12):
+    if len(df) <= n:
+        return df.index.tolist()
+    return random.sample(list(df.index), n)
+
+if "random_albums" not in st.session_state or st.session_state.random_albums is None:
+    st.session_state.random_albums = pick_random_albums(covers_df)
+
+cols = st.sidebar.columns(3)
+for i, idx in enumerate(st.session_state.random_albums):
+    row = covers_df.loc[idx]
+    cover_url = row["cover_url"]
+    release_id = row["release_id"]
+    link = f"https://www.discogs.com/release/{release_id}"
+    with cols[i % 3]:
+        st.markdown(
+            f"""
+            <a href="{link}" target="_blank">
+                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+# Style reload button
+st.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        background: none;
+        border: none;
+        color: #e74c3c;
+        font-size: 18px;
+        padding: 0;
+        margin: 0;
+    }
+    div.stButton > button:first-child:hover {
+        color: #c0392b;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --------------------------
 # Records by Year
 # --------------------------
 st.subheader("📅 Records by Year")
-df_filtered["year"] = pd.to_numeric(df_filtered["year"], errors="coerce")
-df_year = df_filtered[df_filtered["year"] > 0]
-
+df_year = df_filtered[df_filtered["year"] > 0]  # ignore invalid
 df_year = df_year["year"].value_counts().sort_index().reset_index()
 df_year.columns = ["Year", "Count"]
 
@@ -54,17 +127,9 @@ if df_year.empty:
     st.warning("No valid release years found in your collection.")
 else:
     max_year = df_year.loc[df_year["Count"].idxmax(), "Year"]
-    df_year["Category"] = df_year["Year"].apply(lambda y: "Max" if y == max_year else "Other")
-
-    fig_year = px.bar(
-        df_year,
-        x="Year",
-        y="Count",
-        color="Category",
-        title="Records by Year",
-        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
-    )
-    fig_year.update_layout(showlegend=False)
+    colors = ["#e74c3c" if y == max_year else "#666" for y in df_year["Year"]]
+    fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
+    fig_year.update_traces(marker_color=colors)
     st.plotly_chart(fig_year, use_container_width=True)
 
 # --------------------------
@@ -97,59 +162,44 @@ df_styles.columns = ["Style", "Count"]
 if df_styles.empty:
     st.warning("No valid styles found in your collection.")
 else:
-    df_styles = df_styles.sort_values("Count", ascending=True)
+    fig_styles = px.bar(df_styles, x="Count", y="Style", orientation="h", title="Top 15 Styles")
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
-    df_styles["Category"] = df_styles["Style"].apply(lambda s: "Max" if s == max_style else "Other")
-
-    fig_styles = px.bar(
-        df_styles,
-        x="Count",
-        y="Style",
-        orientation="h",
-        color="Category",
-        title="Top 15 Styles",
-        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
-    )
-    fig_styles.update_layout(showlegend=False)
+    colors = ["#e74c3c" if s == max_style else "#666" for s in df_styles["Style"]]
+    fig_styles.update_traces(marker_color=colors)
+    fig_styles.update_layout(yaxis=dict(autorange="reversed"))
     st.plotly_chart(fig_styles, use_container_width=True)
 
 # ---------------------
-# Pressing Types (Proportions)
+# Pressing Types
 # ---------------------
 st.subheader("📀 Pressing Types in Collection")
 
 pressing_counts = {
-    "Original Press": int(df_filtered["is_original"].sum()),
-    "Repress/Reissue": int(df_filtered["is_reissue"].sum()),
-    "Limited Edition": int(df_filtered["is_limited"].sum()),
+    "Original Press": df_filtered["is_original"].sum(),
+    "Repress/Reissue": df_filtered["is_reissue"].sum(),
+    "Limited Edition": df_filtered["is_limited"].sum(),
 }
-total = sum(pressing_counts.values())
+total_pressings = sum(pressing_counts.values())
+pressing_percent = {k: (v / total_pressings) * 100 for k, v in pressing_counts.items()}
 
-df_pressing = pd.DataFrame(
-    [(k, v, (v / total * 100 if total > 0 else 0)) for k, v in pressing_counts.items()],
-    columns=["Type", "Count", "Percent"]
+df_pressing = pd.DataFrame({
+    "Type": list(pressing_percent.keys()),
+    "Proportion (%)": list(pressing_percent.values())
+}).sort_values("Proportion (%)", ascending=False)
+
+fig_pressing = px.bar(
+    df_pressing,
+    x="Proportion (%)",
+    y="Type",
+    orientation="h",
+    text="Proportion (%)",
+    title="Pressing Types (Proportion %)"
 )
-
-if df_pressing.empty or total == 0:
-    st.warning("No pressing type info available.")
-else:
-    df_pressing = df_pressing.sort_values("Percent", ascending=True)
-    max_type = df_pressing.loc[df_pressing["Percent"].idxmax(), "Type"]
-    df_pressing["Category"] = df_pressing["Type"].apply(lambda t: "Max" if t == max_type else "Other")
-
-    fig_pressing = px.bar(
-        df_pressing,
-        x="Percent",
-        y="Type",
-        orientation="h",
-        color="Category",
-        text=df_pressing["Percent"].map("{:.1f}%".format),
-        title="Proportion of Pressing Types (%)",
-        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
-    )
-    fig_pressing.update_traces(textposition="outside")
-    fig_pressing.update_layout(showlegend=False, xaxis_title="Percent (%)")
-    st.plotly_chart(fig_pressing, use_container_width=True)
+max_type = df_pressing.loc[df_pressing["Proportion (%)"].idxmax(), "Type"]
+colors = ["#e74c3c" if t == max_type else "#666" for t in df_pressing["Type"]]
+fig_pressing.update_traces(marker_color=colors, texttemplate="%{text:.1f}%")
+fig_pressing.update_layout(yaxis=dict(autorange="reversed"))
+st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
 # Growth Over Time
@@ -164,7 +214,6 @@ if df_time.empty:
 else:
     monthly_adds = df_time.resample("M").size()
     cumulative = monthly_adds.cumsum()
-
     df_growth = pd.DataFrame({
         "Month": monthly_adds.index,
         "New records": monthly_adds.values,
@@ -175,98 +224,17 @@ else:
         df_growth,
         x="Month",
         y=["New records", "Cumulative"],
-        title=f"Discogs Collection Growth Over Time "
-              f"(showing {len(df_time)} / {len(df_filtered)} records)",
-        color_discrete_map={"New records": "#3498db", "Cumulative": "#e74c3c"}
+        title=f"Discogs Collection Growth Over Time (showing {len(df_time)} / {len(df_filtered)} records)"
     )
+    fig_growth.update_traces(line=dict(color="#e74c3c"), selector=dict(name="New records"))
+    fig_growth.update_traces(line=dict(color="#666"), selector=dict(name="Cumulative"))
     st.plotly_chart(fig_growth, use_container_width=True)
 
     if missing_added > 0:
-        st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
-                f"and are excluded from the growth chart.")
-# --------------------------
-# Ensure collection is loaded ONCE
-# --------------------------
-if "df" not in st.session_state:
-    with st.spinner("Fetching data from Discogs API..."):
-        st.session_state.df = fetch_all_releases(USERNAME)
-
-df = st.session_state.df
-
-# Keep only albums with covers
-if "all_covers" not in st.session_state:
-    st.session_state.all_covers = df.dropna(subset=["cover_url"])
-
-# --------------------------
-# Album Art Preview in Sidebar (grid)
-# --------------------------
-col1, col2 = st.sidebar.columns([5, 1])
-with col1:
-    st.markdown("### 🎨 Random Album Covers")
-with col2:
-    if st.button("🔄", key="reload_covers"):
-        # Only reshuffle, no data reload
-        st.session_state.random_albums = None
-
-def pick_random_albums(df, n=12):
-    if len(df) <= n:
-        return df.index.tolist()
-    return random.sample(list(df.index), n)
-
-# Generate random sample if missing
-if "random_albums" not in st.session_state or st.session_state.random_albums is None:
-    st.session_state.random_albums = pick_random_albums(st.session_state.all_covers)
-
-# Display in a 3-column grid
-cols = st.sidebar.columns(3)
-for i, idx in enumerate(st.session_state.random_albums):
-    row = st.session_state.all_covers.loc[idx]
-    cover_url = row["cover_url"]
-    release_id = row["release_id"]
-    link = f"https://www.discogs.com/release/{release_id}"
-    with cols[i % 3]:
-        st.markdown(
-            f"""
-            <a href="{link}" target="_blank">
-                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-# Style the reload button as a red icon
-st.markdown(
-    """
-    <style>
-    div.stButton > button:first-child {
-        background: none;
-        border: none;
-        color: #e74c3c;
-        font-size: 20px;
-        padding: 0;
-        margin: 0;
-    }
-    div.stButton > button:first-child:hover {
-        color: #c0392b;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
+        st.info(f"⚠️ {missing_added} records had no parseable 'date_added' and are excluded from the growth chart.")
 
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
-
-
-
-
-
-
-
-
-
