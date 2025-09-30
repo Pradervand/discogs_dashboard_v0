@@ -39,6 +39,33 @@ if selected_style != "All":
 
 st.success(f"Loaded {len(df_filtered)} records (after filtering)")
 
+import random
+
+st.sidebar.subheader("🎨 Random Album Covers")
+
+# Pick 12 random rows
+if len(df_filtered) >= 12:
+    sample_df = df_filtered.sample(12, random_state=None)
+else:
+    sample_df = df_filtered
+
+for _, row in sample_df.iterrows():
+    cover_url = row.get("thumb_url") or row.get("cover_url")
+    release_id = row.get("release_id")
+    title = row.get("title")
+
+    if cover_url and release_id:
+        link = f"https://www.discogs.com/release/{release_id}"
+        st.sidebar.markdown(
+            f"""
+            <a href="{link}" target="_blank">
+                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+            </a>
+            <div style="text-align:center; font-size:11px; margin-bottom:12px;">{title}</div>
+            """,
+            unsafe_allow_html=True
+        )
+
 # --------------------------
 # Helper function
 # --------------------------
@@ -197,4 +224,5 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
