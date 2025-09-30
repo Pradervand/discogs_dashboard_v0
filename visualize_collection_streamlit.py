@@ -364,9 +364,9 @@ st.markdown(
 # --------------------------
 # Data Preview
 # --------------------------
-st.subheader("🔍 Data")
+with st.expander("🔍 Data Preview (click to expand)"):
+    st.dataframe(df_filtered)
 
-st.dataframe(df_filtered, use_container_width=True)
 
 
 
