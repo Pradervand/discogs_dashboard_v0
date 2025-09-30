@@ -188,19 +188,37 @@ else:
 # --------------------------
 # Album Art Preview in Sidebar (grid)
 # --------------------------
-st.sidebar.subheader("🎨 Random Album Covers")
+
+# Title + reload icon inline
+st.sidebar.markdown(
+    """
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+        <h3 style="margin:0;">🎨 Random Album Covers</h3>
+        <form action="#" method="post">
+            <button name="reload" style="
+                border:none;
+                background:none;
+                cursor:pointer;
+                font-size:18px;
+                padding:0;
+            ">🔄</button>
+        </form>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Initialize state
 if "random_albums" not in st.session_state:
     st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
 
-# Reload button inside a small form (isolates refresh to this block)
-with st.sidebar.form("reload_form", clear_on_submit=False):
-    reload = st.form_submit_button("🔄")
-    if reload:
-        st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
+# Handle reload manually
+if "reload" in st.query_params:
+    st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
+    # Clear the query param so it doesn't persist
+    st.query_params.clear()
 
-# Display in 3-column grid
+# Display covers in 3-column grid
 cols = st.sidebar.columns(3)
 for i, idx in enumerate(st.session_state.random_albums):
     row = df_filtered.loc[idx]
@@ -223,5 +241,6 @@ for i, idx in enumerate(st.session_state.random_albums):
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
