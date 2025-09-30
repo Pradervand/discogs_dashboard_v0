@@ -11,10 +11,14 @@ st.set_page_config(page_title="Discogs Collection Dashboard", layout="wide")
 st.title("📀 My Discogs Collection Dashboard")
 
 # --------------------------
-# Fetch collection
+# Cached fetch
 # --------------------------
-with st.spinner("Fetching data from Discogs API..."):
-    df = fetch_all_releases(USERNAME)
+@st.cache_data(show_spinner="Fetching data from Discogs API...")
+def load_collection(username):
+    return fetch_all_releases(username)
+
+# Load once (cached)
+df = load_collection(USERNAME).copy()
 
 # Parse dates safely
 df["added"] = pd.to_datetime(
@@ -24,7 +28,9 @@ df["added"] = pd.to_datetime(
     infer_datetime_format=True
 )
 
+# --------------------------
 # Sidebar filters
+# --------------------------
 st.sidebar.header("Filters")
 all_genres = sorted(set(g for g in df["genres"].dropna().str.split(", ").explode()))
 all_styles = sorted(set(s for s in df["styles"].dropna().str.split(", ").explode()))
@@ -97,7 +103,7 @@ df_styles.columns = ["Style", "Count"]
 if df_styles.empty:
     st.warning("No valid styles found in your collection.")
 else:
-    df_styles = df_styles.sort_values("Count", ascending=True)
+    df_styles = df_styles.sort_values("Count", ascending=False)
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
     df_styles["Category"] = df_styles["Style"].apply(lambda s: "Max" if s == max_style else "Other")
 
@@ -133,7 +139,7 @@ df_pressing = pd.DataFrame(
 if df_pressing.empty or total == 0:
     st.warning("No pressing type info available.")
 else:
-    df_pressing = df_pressing.sort_values("Percent", ascending=True)
+    df_pressing = df_pressing.sort_values("Percent", ascending=False)
     max_type = df_pressing.loc[df_pressing["Percent"].idxmax(), "Type"]
     df_pressing["Category"] = df_pressing["Type"].apply(lambda t: "Max" if t == max_type else "Other")
 
@@ -184,28 +190,18 @@ else:
     if missing_added > 0:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
-# --------------------------
-# Ensure collection is loaded ONCE
-# --------------------------
-if "df" not in st.session_state:
-    with st.spinner("Fetching data from Discogs API..."):
-        st.session_state.df = fetch_all_releases(USERNAME)
-
-df = st.session_state.df
-
-# Keep only albums with covers
-if "all_covers" not in st.session_state:
-    st.session_state.all_covers = df.dropna(subset=["cover_url"])
 
 # --------------------------
 # Album Art Preview in Sidebar (grid)
 # --------------------------
+if "all_covers" not in st.session_state:
+    st.session_state.all_covers = df.dropna(subset=["cover_url"])
+
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album Covers")
 with col2:
     if st.button("🔄", key="reload_covers"):
-        # Only reshuffle, no data reload
         st.session_state.random_albums = None
 
 def pick_random_albums(df, n=12):
@@ -213,11 +209,9 @@ def pick_random_albums(df, n=12):
         return df.index.tolist()
     return random.sample(list(df.index), n)
 
-# Generate random sample if missing
 if "random_albums" not in st.session_state or st.session_state.random_albums is None:
     st.session_state.random_albums = pick_random_albums(st.session_state.all_covers)
 
-# Display in a 3-column grid
 cols = st.sidebar.columns(3)
 for i, idx in enumerate(st.session_state.random_albums):
     row = st.session_state.all_covers.loc[idx]
@@ -235,7 +229,6 @@ for i, idx in enumerate(st.session_state.random_albums):
             unsafe_allow_html=True
         )
 
-# Style the reload button as a red icon
 st.markdown(
     """
     <style>
@@ -255,19 +248,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
-
-
-
-
-
-
-
-
-
-
