@@ -188,13 +188,38 @@ else:
 # Album Art Preview in Sidebar (grid)
 # --------------------------
 
-# Header + reload button inline
+# Header + reload icon inline (styled like text, no box)
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album Covers")
-with col2:
-    if st.button("🔄", key="reload_covers"):
-        st.session_state.random_albums = None  # reset so new sample is picked
+
+# clickable reload icon with custom CSS
+reload_clicked = st.sidebar.markdown(
+    """
+    <style>
+    .reload-btn {
+        cursor: pointer;
+        font-size: 20px;
+        text-decoration: none;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        color: #e74c3c;
+    }
+    .reload-btn:hover {
+        color: #c0392b;
+    }
+    </style>
+    <a href="?reload=1" class="reload-btn">🔄</a>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Handle reload via query param instead of Streamlit button rerun
+if "reload" in st.query_params:
+    st.session_state.random_albums = None
+    st.query_params.clear()
 
 def pick_random_albums(df, n=12):
     valid = df.dropna(subset=["cover_url"])
@@ -230,6 +255,7 @@ for i, idx in enumerate(st.session_state.random_albums):
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
