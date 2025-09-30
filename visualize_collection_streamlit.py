@@ -157,9 +157,8 @@ else:
     )
     fig_styles.update_layout(showlegend=False)
     st.plotly_chart(fig_styles, use_container_width=True)
-    
 # ---------------------
-# Pressing Types (Percent with Icons)
+# Pressing Types (Unified Icon Block with Sorted Groups + Legend)
 # ---------------------
 st.subheader("📀 Pressing Types in Collection")
 
@@ -175,19 +174,38 @@ icons = {
 }
 
 ICON_SCALE = 5  # 1 icon = 5%
+WRAP = 10      # max icons per line
 
-# Display icons for each category
+# Build icon rows for each type
+all_rows = []
 for press_type, count in pressing_counts.items():
     if total > 0 and count > 0:
         percent = (count / total) * 100
-        num_icons = max(1, int(round(percent / ICON_SCALE)))  # at least 1 icon
-        st.markdown(
-            f"**{press_type}** ({percent:.1f}%)<br>" +
-            "".join([icons[press_type]] * num_icons),
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(f"**{press_type}**: 0%")
+        num_icons = max(1, int(round(percent / ICON_SCALE)))
+        icon_block = "".join([icons[press_type]] * num_icons)
+        all_rows.append((press_type, percent, icon_block))
+
+# Sort rows so Originals first, then Reissues
+sorted_rows = sorted(all_rows, key=lambda x: 0 if x[0] == "Original Press" else 1)
+
+# Concatenate icon blocks in sorted order
+icons_string = "".join([row[2] for row in sorted_rows])
+wrapped_rows = [
+    icons_string[i:i+WRAP] for i in range(0, len(icons_string), WRAP)
+]
+
+# Display unified block
+st.markdown("<br>".join(wrapped_rows), unsafe_allow_html=True)
+
+# Legend below
+legend_html = " ".join(
+    [f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_rows]
+)
+st.markdown(
+    f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>",
+    unsafe_allow_html=True
+)
+down(f"**{press_type}**: 0%")
 
 # --------------------------
 # Growth Over Time
@@ -341,6 +359,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
