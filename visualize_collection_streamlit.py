@@ -232,77 +232,42 @@ def fetch_release_videos(release_id):
         return []
 
 # --------------------------
-# Random Album Spotlight (Sidebar)
+# Random Album in Sidebar
 # --------------------------
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album")
 with col2:
-    if st.button("🔄", key="reload_random_album"):
+    if st.button("🔄", key="reload_album"):
+        # Force refresh of the random album
         st.session_state.random_album = None
 
-def pick_random_album(df):
-    if df.empty:
-        return None
-    return df.sample(1).iloc[0]
-
-if "random_album" not in st.session_state or st.button("🔄 Pick another album"):
+# Pick or refresh random album
+if "random_album" not in st.session_state or st.session_state.random_album is None:
     st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
 
 album = st.session_state.random_album
 
-if album is not None:
-    cover_url = album["cover_url"]
-    release_id = album["release_id"]
-    link = f"https://www.discogs.com/release/{release_id}"
-    title = album.get("title", "Unknown Title")
-    year = album.get("year", "N/A")
+# Display album details
+cover_url = album["cover_url"]
+release_id = album["release_id"]
+artist = album.get("artist", "Unknown").split(" (")[0]  # clean artist name
+title = album.get("title", "Unknown")
+label = album.get("label", "Unknown").split(" (")[0]    # clean label
+year = album.get("year", "Unknown")
 
-    # Clean artist/label fields
-    artists = clean_name(album.get("artists", "Unknown Artist"))
-    labels = clean_name(album.get("labels", "Unknown Label"))
+link = f"https://www.discogs.com/release/{release_id}"
 
-    # Album info
-    st.sidebar.markdown(
-        f"""
+st.sidebar.markdown(
+    f"""
+    <div style="text-align:center;">
         <a href="{link}" target="_blank">
             <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
         </a>
-        <div style="font-size:14px; margin-bottom:4px;"><b>{artists}</b> — {title}</div>
-        <div style="font-size:12px; color:lightgray;">Year: {year}</div>
-        <div style="font-size:12px; color:lightgray;">Label: {labels}</div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Fetch videos
-    videos = fetch_release_videos(release_id)
-    if videos:
-        st.sidebar.markdown("#### 🎥 Videos")
-        for v in videos:
-            uri = v.get("uri")
-            if "youtube.com" in uri or "youtu.be" in uri:
-                st.sidebar.video(uri)
-            else:
-                st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
-
-# 🔄 style reload button
-st.markdown(
-    """
-    <style>
-    div[data-testid="stHorizontalBlock"] div.stButton > button:first-child {
-        background: none;
-        border: none;
-        color: #e74c3c;
-        font-size: 18px;
-        padding: 0;
-        margin: 0;
-    }
-    div[data-testid="stHorizontalBlock"] div.stButton > button:first-child:hover {
-        color: #c0392b;
-    }
-    </style>
+        <p><b>{artist}</b><br>{title}<br>
+        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
+    </div>
     """,
     unsafe_allow_html=True
 )
@@ -312,6 +277,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
