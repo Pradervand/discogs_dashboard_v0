@@ -199,7 +199,7 @@ if "all_covers" not in st.session_state:
 
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
-    st.markdown("### 🎨 Random Album Covers")
+    st.markdown("### 🎨 Random Album")
 with col2:
     if st.button("🔄", key="reload_covers"):
         st.session_state.random_albums = None
@@ -253,3 +253,4 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
