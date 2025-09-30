@@ -5,8 +5,16 @@ import plotly.express as px
 import random
 from collection_dump import fetch_all_releases
 
+USER_TOKEN = st.secrets["DISCOGS_TOKEN"]
 USERNAME = st.secrets["DISCOGS_USERNAME"]
+
 USER_AGENT = "Niolu's Discogs test"   
+BASE_URL = "https://api.discogs.com"
+
+headers = {
+    "User-Agent": USER_AGENT,
+    "Authorization": f"Discogs token={USER_TOKEN}"
+}
 
 st.set_page_config(page_title="Discogs Collection Dashboard", layout="wide")
 st.title("📀 My Discogs Collection Dashboard")
@@ -316,10 +324,6 @@ link = f"https://www.discogs.com/release/{release_id}"
 # 🔹 Function to fetch prices
 def fetch_price_stats(release_id):
     url = f"https://api.discogs.com/marketplace/stats/{release_id}"
-    headers = {
-        "User-Agent": "Niolu's Discogs test",
-        "Authorization": f"Discogs token={st.secrets['DISCOGS_TOKEN']}"
-    }
     try:
         r = requests.get(url, headers=headers)
         r.raise_for_status()
@@ -410,6 +414,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
