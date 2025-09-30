@@ -190,28 +190,30 @@ else:
 # --------------------------
 st.sidebar.subheader("🎨 Random Album Covers")
 
-if st.sidebar.button("🔄 Reload"):
-    st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
-
+# Initialize state
 if "random_albums" not in st.session_state:
     st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
 
-# Display in a 3-column grid inside sidebar
+# Reload button inside a small form (isolates refresh to this block)
+with st.sidebar.form("reload_form", clear_on_submit=False):
+    reload = st.form_submit_button("🔄 Reload 12")
+    if reload:
+        st.session_state.random_albums = random.sample(list(df_filtered.index), min(12, len(df_filtered)))
+
+# Display in 3-column grid
 cols = st.sidebar.columns(3)
 for i, idx in enumerate(st.session_state.random_albums):
     row = df_filtered.loc[idx]
     cover_url = row.get("cover_url")
     release_id = row.get("release_id")
-    title = row.get("title", "Unknown Title")
     if cover_url and release_id:
         link = f"https://www.discogs.com/release/{release_id}"
         with cols[i % 3]:
             st.markdown(
                 f"""
                 <a href="{link}" target="_blank">
-                    <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+                    <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
                 </a>
-                <div style="text-align:center; font-size:10px; margin-bottom:8px;">{title}</div>
                 """,
                 unsafe_allow_html=True
             )
@@ -221,3 +223,4 @@ for i, idx in enumerate(st.session_state.random_albums):
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
