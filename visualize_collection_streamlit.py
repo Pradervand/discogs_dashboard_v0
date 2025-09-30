@@ -185,57 +185,57 @@ else:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
 # --------------------------
-# Fetch data ONCE and cache
+# Ensure collection is loaded ONCE
 # --------------------------
-@st.cache_data(show_spinner="Fetching data from Discogs API...")
-def load_collection(username):
-    return fetch_all_releases(username)
+if "df" not in st.session_state:
+    with st.spinner("Fetching data from Discogs API..."):
+        st.session_state.df = fetch_all_releases(USERNAME)
 
-df = load_collection(USERNAME)
+df = st.session_state.df
 
-# Pre-extract all albums with covers
+# Keep only albums with covers
 if "all_covers" not in st.session_state:
     st.session_state.all_covers = df.dropna(subset=["cover_url"])
 
 # --------------------------
 # Album Art Preview in Sidebar (grid)
 # --------------------------
-
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album Covers")
 with col2:
     if st.button("🔄", key="reload_covers"):
-        st.session_state.random_albums = None  # trigger re-pick
+        # Only reshuffle, no data reload
+        st.session_state.random_albums = None
 
 def pick_random_albums(df, n=12):
     if len(df) <= n:
         return df.index.tolist()
     return random.sample(list(df.index), n)
 
-# Pick from cached covers only
+# Generate random sample if missing
 if "random_albums" not in st.session_state or st.session_state.random_albums is None:
     st.session_state.random_albums = pick_random_albums(st.session_state.all_covers)
 
-# Display covers in 3-column grid
+# Display in a 3-column grid
 cols = st.sidebar.columns(3)
 for i, idx in enumerate(st.session_state.random_albums):
     row = st.session_state.all_covers.loc[idx]
     cover_url = row["cover_url"]
     release_id = row["release_id"]
-    title = row["title"]
     link = f"https://www.discogs.com/release/{release_id}"
     with cols[i % 3]:
         st.markdown(
             f"""
             <a href="{link}" target="_blank">
-                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
             </a>
             """,
             unsafe_allow_html=True
         )
 
-# Style reload button as icon
+# Style the reload button as a red icon
 st.markdown(
     """
     <style>
@@ -261,6 +261,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
