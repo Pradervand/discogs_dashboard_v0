@@ -206,7 +206,6 @@ else:
     if missing_added > 0:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
-
 # --------------------------
 # Random Album Spotlight (Sidebar)
 # --------------------------
@@ -233,8 +232,8 @@ if album is not None:
     link = f"https://www.discogs.com/release/{release_id}"
     title = album.get("title", "Unknown Title")
     year = album.get("year", "N/A")
-    label = album.get("label", "Unknown Label")
-    artist = album.get("artist", "Unknown Artist")
+    labels = album.get("labels", "Unknown Label")
+    artists = album.get("artists", "Unknown Artist")
 
     st.sidebar.markdown(
         f"""
@@ -242,19 +241,39 @@ if album is not None:
             <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
         </a>
-        <div style="font-size:14px; margin-bottom:4px;"><b>{artist}</b> — {title}</div>
+        <div style="font-size:14px; margin-bottom:4px;"><b>{artists}</b> — {title}</div>
         <div style="font-size:12px; color:gray;">Year: {year}</div>
-        <div style="font-size:12px; color:gray;">Label: {label}</div>
+        <div style="font-size:12px; color:gray;">Label: {labels}</div>
         """,
         unsafe_allow_html=True
     )
 
+# Style the reload button as a red icon with no box
+st.markdown(
+    """
+    <style>
+    div[data-testid="stHorizontalBlock"] div.stButton > button:first-child {
+        background: none;
+        border: none;
+        color: #e74c3c;
+        font-size: 18px;
+        padding: 0;
+        margin: 0;
+    }
+    div[data-testid="stHorizontalBlock"] div.stButton > button:first-child:hover {
+        color: #c0392b;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
