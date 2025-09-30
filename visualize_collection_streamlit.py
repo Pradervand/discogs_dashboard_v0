@@ -351,11 +351,6 @@ st.sidebar.markdown(
 # Fetch marketplace prices
 prices = fetch_price_stats(release_id)
 
-if prices:
-    col_low, col_med, col_high = st.sidebar.columns(3)
-    col_low.metric("Lowest", lowest)
-    col_med.metric("Median", median)
-    col_high.metric("Highest", highest)
 
 
  # Fetch videos
@@ -394,6 +389,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
