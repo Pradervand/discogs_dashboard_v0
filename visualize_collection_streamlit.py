@@ -119,7 +119,7 @@ st.markdown(
 # Records by Year
 # --------------------------
 st.subheader("📅 Records by Year")
-df_year = df_filtered[df_filtered["year"] > 0]  # ignore invalid
+df_year = df_filtered[df_filtered["year"] > 0]
 df_year = df_year["year"].value_counts().sort_index().reset_index()
 df_year.columns = ["Year", "Count"]
 
@@ -127,7 +127,7 @@ if df_year.empty:
     st.warning("No valid release years found in your collection.")
 else:
     max_year = df_year.loc[df_year["Count"].idxmax(), "Year"]
-    colors = ["#e74c3c" if y == max_year else "#666" for y in df_year["Year"]]
+    colors = ["#e74c3c" if y == max_year else "#3498db" for y in df_year["Year"]]
     fig_year = px.bar(df_year, x="Year", y="Count", title="Records by Year")
     fig_year.update_traces(marker_color=colors)
     st.plotly_chart(fig_year, use_container_width=True)
@@ -164,7 +164,7 @@ if df_styles.empty:
 else:
     fig_styles = px.bar(df_styles, x="Count", y="Style", orientation="h", title="Top 15 Styles")
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
-    colors = ["#e74c3c" if s == max_style else "#666" for s in df_styles["Style"]]
+    colors = ["#e74c3c" if s == max_style else "#3498db" for s in df_styles["Style"]]
     fig_styles.update_traces(marker_color=colors)
     fig_styles.update_layout(yaxis=dict(autorange="reversed"))
     st.plotly_chart(fig_styles, use_container_width=True)
@@ -196,7 +196,7 @@ fig_pressing = px.bar(
     title="Pressing Types (Proportion %)"
 )
 max_type = df_pressing.loc[df_pressing["Proportion (%)"].idxmax(), "Type"]
-colors = ["#e74c3c" if t == max_type else "#666" for t in df_pressing["Type"]]
+colors = ["#e74c3c" if t == max_type else "#3498db" for t in df_pressing["Type"]]
 fig_pressing.update_traces(marker_color=colors, texttemplate="%{text:.1f}%")
 fig_pressing.update_layout(yaxis=dict(autorange="reversed"))
 st.plotly_chart(fig_pressing, use_container_width=True)
@@ -227,7 +227,7 @@ else:
         title=f"Discogs Collection Growth Over Time (showing {len(df_time)} / {len(df_filtered)} records)"
     )
     fig_growth.update_traces(line=dict(color="#e74c3c"), selector=dict(name="New records"))
-    fig_growth.update_traces(line=dict(color="#666"), selector=dict(name="Cumulative"))
+    fig_growth.update_traces(line=dict(color="#3498db"), selector=dict(name="Cumulative"))
     st.plotly_chart(fig_growth, use_container_width=True)
 
     if missing_added > 0:
