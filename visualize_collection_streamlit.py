@@ -352,23 +352,10 @@ st.sidebar.markdown(
 prices = fetch_price_stats(release_id)
 
 if prices:
-    lowest = prices.get("lowest", "N/A")
-    median = prices.get("median", "N/A")
-    highest = prices.get("highest", "N/A")
-
-    st.sidebar.markdown(
-        f"""
-        <div style="text-align:center; padding:6px; border-radius:8px;
-                    background-color:#f9f9f9; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-            <p style="margin:0;"><b>💵 Marketplace Prices</b></p>
-            <p style="margin:4px 0;">Lowest: <span style="color:#27ae60;">{lowest}</span></p>
-            <p style="margin:4px 0;">Median: <span style="color:#2980b9;">{median}</span></p>
-            <p style="margin:4px 0;">Highest: <span style="color:#e74c3c;">{highest}</span></p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+    col_low, col_med, col_high = st.sidebar.columns(3)
+    col_low.metric("Lowest", lowest)
+    col_med.metric("Median", median)
+    col_high.metric("Highest", highest)
 
 
  # Fetch videos
@@ -407,6 +394,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
