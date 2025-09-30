@@ -159,7 +159,7 @@ else:
     st.plotly_chart(fig_styles, use_container_width=True)
     
 # ---------------------
-# Pressing Types (Icon Representation)
+# Pressing Types (Percent with Icons)
 # ---------------------
 st.subheader("📀 Pressing Types in Collection")
 
@@ -167,26 +167,27 @@ pressing_counts = {
     "Original Press": int(df_filtered["is_original"].sum()),
     "Repress/Reissue": int(df_filtered["is_reissue"].sum()),
 }
+total = sum(pressing_counts.values())
 
-# Choose scaling: 1 icon = 10 records
-ICON_SCALE = 10
 icons = {
     "Original Press": "📀",
     "Repress/Reissue": "🔁",
 }
 
+ICON_SCALE = 5  # 1 icon = 5%
+
 # Display icons for each category
 for press_type, count in pressing_counts.items():
-    if count > 0:
-        num_icons = max(1, count // ICON_SCALE)  # at least 1 icon
+    if total > 0 and count > 0:
+        percent = (count / total) * 100
+        num_icons = max(1, int(round(percent / ICON_SCALE)))  # at least 1 icon
         st.markdown(
-            f"**{press_type}** ({count})<br>" +
+            f"**{press_type}** ({percent:.1f}%)<br>" +
             "".join([icons[press_type]] * num_icons),
             unsafe_allow_html=True
         )
     else:
-        st.markdown(f"**{press_type}**: 0")
-
+        st.markdown(f"**{press_type}**: 0%")
 
 # --------------------------
 # Growth Over Time
@@ -340,6 +341,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
