@@ -230,7 +230,6 @@ def fetch_release_videos(release_id):
     except Exception as e:
         st.warning(f"Could not fetch videos for release {release_id}: {e}")
         return []
-
 # --------------------------
 # Random Album in Sidebar
 # --------------------------
@@ -318,11 +317,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
