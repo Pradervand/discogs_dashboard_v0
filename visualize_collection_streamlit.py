@@ -114,17 +114,17 @@ else:
     st.plotly_chart(fig_year, use_container_width=True)
 
     # --- Show oldest record info ---
-    oldest = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
-    st.markdown(
-        f"""
-        **📀 Oldest Record in Collection**  
-        <span style="font-size:16px;">
-        <b>{oldest.get('artists', 'Unknown')}</b> – {oldest.get('title', 'Unknown')}  
-        ({oldest.get('year', 'Unknown')})
-        </span>
-        """,
-        unsafe_allow_html=True
-    )
+oldest = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
+st.markdown(
+    f"""
+    **📀 Oldest Record in Collection**  
+    <span style="font-size:16px;">
+    <b>{oldest.get('artists', 'Unknown')}</b> – {oldest.get('title', 'Unknown')}  
+    ({oldest.get('year', 'Unknown')})
+    </span>
+    """,
+    unsafe_allow_html=True
+)
 # --------------------------
 # Top Styles
 # --------------------------
@@ -376,6 +376,7 @@ st.markdown(
 st.subheader("🔍 Data")
 
 st.dataframe(df_filtered, use_container_width=True)
+
 
 
 
