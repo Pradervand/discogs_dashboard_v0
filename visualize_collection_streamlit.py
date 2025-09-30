@@ -161,7 +161,7 @@ else:
 # ---------------------
 # Pressing Types (Unified Icon Block with Sorted Groups + Legend, Centered, Bigger Icons)
 # ---------------------
-st.subheader("📀 Pressing Types in Collection")
+st.subheader("📀 Original Press VS Reissue/Repress")
 
 pressing_counts = {
     "Original Press": int(df_filtered["is_original"].sum()),
@@ -364,6 +364,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
