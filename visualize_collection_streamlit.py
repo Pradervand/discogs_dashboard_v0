@@ -113,8 +113,6 @@ else:
     fig_year.update_layout(showlegend=False)
     st.plotly_chart(fig_year, use_container_width=True)
 
-oldest = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
-thumb_url = oldest.get("thumb_url", "")
 
 # --- Show oldest record info ---
 oldest = df_filtered[df_filtered["year"] > 0].sort_values("year").iloc[0]
@@ -395,6 +393,7 @@ st.markdown(
 st.subheader("🔍 Data")
 
 st.dataframe(df_filtered, use_container_width=True)
+
 
 
 
