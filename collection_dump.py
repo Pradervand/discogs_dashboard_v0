@@ -8,15 +8,13 @@ Created on Tue Sep 30 09:51:19 2025
 import requests
 import time
 import pandas as pd
-
 import streamlit as st
 
+# Load secrets
 USER_TOKEN = st.secrets["DISCOGS_TOKEN"]
 USERNAME = st.secrets["DISCOGS_USERNAME"]
 
 USER_AGENT = "Niolu's Discogs test"   
-
-
 BASE_URL = "https://api.discogs.com"
 
 headers = {
@@ -45,24 +43,46 @@ def fetch_all_releases(username, folder_id=0):
     all_records = []
     page = 1
     per_page = 100 
+
     while True:
         data = get_collection_folder_releases(username, folder_id, page=page, per_page=per_page)
         releases = data.get("releases", [])
         if not releases:
             break
+
         for item in releases:
             bi = item.get("basic_information", {})
+
+            # --- Formats and pressing info ---
+            formats = bi.get("formats", [])
+            fmt_desc = []
+            for f in formats:
+                if "descriptions" in f:
+                    fmt_desc.extend(f["descriptions"])
+
+            # Normalize to lowercase for detection
+            fmt_desc_lower = [d.lower() for d in fmt_desc]
+
+            is_reissue = any("repress" in d or "reissue" in d for d in fmt_desc_lower)
+            is_limited = any("limited edition" in d for d in fmt_desc_lower)
+            is_original = not is_reissue  # If not tagged as repress/reissue → original press
+
             rec = {
                 "release_id": bi.get("id"),
                 "title": bi.get("title"),
                 "year": bi.get("year"),
                 "artists": ", ".join([artist.get("name") for artist in bi.get("artists", [])]) if bi.get("artists") else None,
                 "labels": ", ".join([lbl.get("name") for lbl in bi.get("labels", [])]) if bi.get("labels") else None,
-                "formats": ", ".join([fmt.get("name") for fmt in bi.get("formats", [])]) if bi.get("formats") else None,
-                "styles": ", ".join(bi.get("styles", [])) if bi.get("styles") else None,
+                "formats": ", ".join([fmt.get("name") for fmt in formats]) if formats else None,
+                "format_descriptions": ", ".join(fmt_desc) if fmt_desc else None,
                 "genres": ", ".join(bi.get("genres", [])) if bi.get("genres") else None,
+                "styles": ", ".join(bi.get("styles", [])) if bi.get("styles") else None,
                 "added": item.get("date_added"),                
-                "rating": item.get("rating")
+                "rating": item.get("rating"),
+                # New flags
+                "is_limited": is_limited,
+                "is_reissue": is_reissue,
+                "is_original": is_original
             }
             all_records.append(rec)
        
@@ -71,12 +91,11 @@ def fetch_all_releases(username, folder_id=0):
             break
         page += 1
         
-        time.sleep(1)  
+        time.sleep(1)  # respect API rate limit
+    
     return pd.DataFrame(all_records)
 
 if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
-
-
