@@ -33,6 +33,33 @@ df["added"] = pd.to_datetime(
 # --------------------------
 df_filtered=df
 
+# --------------------------
+# Quick Synthesis / Stats
+# --------------------------
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric("🎵 Total Records", f"{len(df_filtered):,}")
+
+with col2:
+    unique_artists = df_filtered["artists"].nunique()
+    st.metric("👨‍🎤 Unique Artists", f"{unique_artists:,}")
+
+with col3:
+    min_year = pd.to_numeric(df_filtered["year"], errors="coerce").min()
+    max_year = pd.to_numeric(df_filtered["year"], errors="coerce").max()
+    if pd.notna(min_year) and pd.notna(max_year):
+        st.metric("📅 Year Range", f"{int(min_year)} - {int(max_year)}")
+    else:
+        st.metric("📅 Year Range", "N/A")
+
+with col4:
+    if "is_original" in df_filtered.columns and "is_reissue" in df_filtered.columns:
+        originals = int(df_filtered["is_original"].sum())
+        reissues = int(df_filtered["is_reissue"].sum())
+        st.metric("🔄 Originals vs Reissues", f"{originals} / {reissues}")
+    else:
+        st.metric("🔄 Originals vs Reissues", "N/A")
 
 
 # --------------------------
@@ -242,6 +269,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
