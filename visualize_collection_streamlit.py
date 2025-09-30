@@ -280,21 +280,16 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# Embedded videos (if available)
-if isinstance(videos, list) and len(videos) > 0:
-    st.sidebar.markdown("#### ▶️ Videos")
-    for v in videos[:2]:  # show up to 2 videos
-        uri = v.get("uri")
-        if uri and "youtube.com" in uri:
-            youtube_id = uri.split("v=")[-1]
-            st.sidebar.markdown(
-                f"""
-                <iframe width="100%" height="200" 
-                        src="https://www.youtube.com/embed/{youtube_id}" 
-                        frameborder="0" allowfullscreen></iframe>
-                """,
-                unsafe_allow_html=True
-            )
+ # Fetch videos
+    videos = fetch_release_videos(release_id)
+    if videos:
+        st.sidebar.markdown("#### 🎥 Videos")
+        for v in videos:
+            uri = v.get("uri")
+            if "youtube.com" in uri or "youtu.be" in uri:
+                st.sidebar.video(uri)
+            else:
+                st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
 # Style reload button (no gray box)
 st.markdown(
@@ -323,6 +318,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
