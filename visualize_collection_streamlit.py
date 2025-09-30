@@ -68,16 +68,23 @@ with col3:
     else:
         st.metric("📅 Year Range", "N/A")
 
+
 with col4:
-    if "runtime_seconds" in df_filtered.columns:
-        total_seconds = df_filtered["runtime_seconds"].sum()
-        hours, remainder = divmod(total_seconds, 3600)
-        minutes, _ = divmod(remainder, 60)
-        st.metric("⏱️ Total Runtime", f"{hours}h {minutes}m")
+    if "labels" in df_filtered.columns and not df_filtered["labels"].dropna().empty:
+        # Split multiple labels, clean, and count
+        all_labels = (
+            df_filtered["labels"]
+            .dropna()
+            .str.split(", ")
+            .explode()
+            .str.replace(r"\s*\(\d+\)$", "", regex=True)  # remove (5), (6) etc.
+            .str.strip()
+        )
+        top_label = all_labels.value_counts().idxmax()
+        top_count = all_labels.value_counts().max()
+        st.metric("🏆 Favourite Label", f"{top_label} ({top_count})")
     else:
-        st.metric("⏱️ Total Runtime", "N/A")
-
-
+        st.metric("🏆 Favourite Label", "N/A")
 # --------------------------
 # Records by Year
 # --------------------------
@@ -341,6 +348,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
