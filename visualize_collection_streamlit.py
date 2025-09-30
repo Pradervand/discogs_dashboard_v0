@@ -348,7 +348,14 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
+# Fetch marketplace prices
+prices = fetch_price_stats(release_id)
+
 if prices:
+    lowest = prices.get("lowest", "N/A")
+    median = prices.get("median", "N/A")
+    highest = prices.get("highest", "N/A")
+
     st.sidebar.markdown(
         f"""
         <div style="text-align:center; padding:6px; border-radius:8px;
@@ -361,6 +368,7 @@ if prices:
         """,
         unsafe_allow_html=True
     )
+
 
 
  # Fetch videos
@@ -399,6 +407,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
