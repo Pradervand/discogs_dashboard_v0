@@ -89,7 +89,7 @@ with col4:
 # ----------------------------------
 # 🎯 Collection Highlights
 # ----------------------------------
-st.markdown("## 🎯 Collection Highlights")
+st.subheader("🎯 Collection Highlights")
 
 col1, col2 = st.columns(2)
 
@@ -405,6 +405,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
