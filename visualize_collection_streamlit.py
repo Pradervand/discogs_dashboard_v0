@@ -52,15 +52,29 @@ df_year.columns = ["Year", "Count"]
 if df_year.empty:
     st.warning("No valid release years found in your collection.")
 else:
+    # Find max year
+    max_count = df_year["Count"].max()
+    df_year["Highlight"] = df_year["Count"].apply(
+        lambda x: "Most Productive Year" if x == max_count else "Other"
+    )
+
     fig_year = px.bar(
         df_year,
         x="Year",
         y="Count",
+        color="Highlight",
         title="Records by Year",
-        color="Count",
-        color_continuous_scale="Blues"
+        color_discrete_map={
+            "Most Productive Year": "#e74c3c",  # bright red
+            "Other": "#95a5a6"  # neutral gray
+        }
     )
+
+    # Hide legend (since only 2 categories)
+    fig_year.update_layout(showlegend=False)
+
     st.plotly_chart(fig_year, use_container_width=True)
+
 
 # --------------------------
 # Top Styles
@@ -184,3 +198,4 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
