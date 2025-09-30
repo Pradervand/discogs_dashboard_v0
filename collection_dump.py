@@ -22,6 +22,34 @@ headers = {
     "Authorization": f"Discogs token={USER_TOKEN}"
 }
 
+def parse_duration(duration_str):
+    """Convert Discogs duration string (MM:SS or HH:MM:SS) into seconds."""
+    if not isinstance(duration_str, str) or not duration_str.strip():
+        return 0
+    parts = duration_str.split(":")
+    try:
+        parts = [int(p) for p in parts]
+        if len(parts) == 2:  # MM:SS
+            return parts[0] * 60 + parts[1]
+        elif len(parts) == 3:  # HH:MM:SS
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+        else:
+            return 0
+    except Exception:
+        return 0
+
+def fetch_release_duration(release_id):
+    """Fetch tracklist and compute total runtime for a release."""
+    url = f"{DISCOGS_API_BASE}/releases/{release_id}"
+    try:
+        r = requests.get(url, headers=HEADERS)
+        r.raise_for_status()
+        data = r.json()
+        tracklist = data.get("tracklist", [])
+        total_seconds = sum(parse_duration(t.get("duration")) for t in tracklist)
+        return total_seconds
+    except Exception:
+        return 0
 def get_collection_folder_releases(username, folder_id=0, page=1, per_page=100):
     """
     Fetch one page of releases in a given collection folder.
@@ -100,4 +128,5 @@ if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
+
 
