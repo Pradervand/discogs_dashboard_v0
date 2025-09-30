@@ -9,9 +9,11 @@ import requests
 import time
 import pandas as pd
 
+import streamlit as st
 
-USER_TOKEN = "KntqUVHoEIzzkAKmHyqNqnygkKaedhdUjTQulQUy"
-USERNAME = "Niolu"
+USER_TOKEN = st.secrets["DISCOGS_TOKEN"]
+USERNAME = st.secrets["DISCOGS_USERNAME"]
+
 USER_AGENT = "Niolu's Discogs test"   
 
 
@@ -76,4 +78,5 @@ if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
+
 
