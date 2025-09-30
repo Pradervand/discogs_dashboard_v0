@@ -275,7 +275,7 @@ def fetch_release_videos(release_id):
         st.warning(f"Could not fetch videos for release {release_id}: {e}")
         return []
 # --------------------------
-# Random Album in Sidebar
+# Random Album in Sidebar (markdown block with prices)
 # --------------------------
 
 # Ensure we have album covers available
@@ -293,36 +293,35 @@ with col2:
 if "random_album" not in st.session_state or st.session_state.random_album is None:
     st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
 
-
 album = st.session_state.random_album
 
-# Clean fields
 def clean_name(value):
     if not value or str(value).lower() == "nan":
         return "Unknown"
-    # If multiple names (list-like), join them
     if isinstance(value, (list, tuple)):
         return " / ".join(str(v).split(" (")[0] for v in value)
-    return str(value).split(" (")[0]  # strip (5), (6)
+    return str(value).split(" (")[0]
 
 cover_url = album.get("cover_url", "")
-release_id = album.get("release_id", "")
+release_id = album.get("release_id", None)
 artist = clean_name(album.get("artists", album.get("artist", "Unknown")))
 title = album.get("title", "Unknown")
 label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
-videos = album.get("videos", [])  # expect list of dicts
 
-link = f"https://www.discogs.com/release/{release_id}"
-# 🔹 Function to fetch prices
+link = f"https://www.discogs.com/release/{release_id}" if release_id else None
+
+# --- Price fetch ---
 def fetch_price_stats(release_id):
+    if not release_id:
+        return None
     url = f"https://api.discogs.com/marketplace/stats/{release_id}"
     headers = {
         "User-Agent": "Niolu's Discogs Dashboard",
         "Authorization": f"Discogs token={st.secrets['DISCOGS_TOKEN']}"
     }
     try:
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, timeout=8)
         r.raise_for_status()
         data = r.json()
         return {
@@ -330,11 +329,32 @@ def fetch_price_stats(release_id):
             "median": data.get("median_price"),
             "highest": data.get("highest_price"),
         }
-    except Exception as e:
-        st.sidebar.warning(f"⚠️ Price data unavailable")
+    except Exception:
         return None
 
-# Album info block
+def fmt_price(v):
+    try:
+        return f"${float(v):.2f}"
+    except Exception:
+        return "N/A"
+
+prices = fetch_price_stats(release_id)
+
+# --- Markdown block with everything together ---
+price_block = ""
+if prices:
+    low = fmt_price(prices.get("lowest"))
+    med = fmt_price(prices.get("median"))
+    high = fmt_price(prices.get("highest"))
+    price_block = f"""
+    <p style="margin-top:6px; font-size:90%;">
+        💵 <b>Prices:</b><br>
+        Lowest: <span style="color:#27ae60;">{low}</span><br>
+        Median: <span style="color:#2980b9;">{med}</span><br>
+        Highest: <span style="color:#e74c3c;">{high}</span>
+    </p>
+    """
+
 st.sidebar.markdown(
     f"""
     <div style="text-align:center;">
@@ -344,51 +364,29 @@ st.sidebar.markdown(
         </a>
         <p><b>{artist}</b><br>{title}<br>
         <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
+        {price_block}
     </div>
     """,
     unsafe_allow_html=True
 )
-# Fetch marketplace prices
-prices = fetch_price_stats(release_id)
 
-
-
- # Fetch videos
-videos = fetch_release_videos(release_id)
+# 🎥 Videos
+videos = fetch_release_videos(release_id) if release_id else []
 if videos:
     st.sidebar.markdown("#### 🎥 Videos")
     for v in videos:
         uri = v.get("uri")
-        if "youtube.com" in uri or "youtu.be" in uri:
+        if uri and ("youtube.com" in uri or "youtu.be" in uri):
             st.sidebar.video(uri)
-        else:
+        elif uri:
             st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
-# Style reload button (no gray box)
-st.markdown(
-    """
-    <style>
-    div.stButton > button:first-child {
-        background: none !important;
-        border: none !important;
-        color: #e74c3c !important;
-        font-size: 20px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-    }
-    div.stButton > button:first-child:hover {
-        color: #c0392b !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 # --------------------------
 # Data Preview
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
