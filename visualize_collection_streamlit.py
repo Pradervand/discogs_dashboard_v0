@@ -46,10 +46,10 @@ with col2:
     st.metric("👨‍🎤 Unique Artists", f"{unique_artists:,}")
 
 with col3:
-    min_year = pd.to_numeric(df_filtered["year"], errors="coerce").min()
-    max_year = pd.to_numeric(df_filtered["year"], errors="coerce").max()
-    if pd.notna(min_year) and pd.notna(max_year):
-        st.metric("📅 Year Range", f"{int(min_year)} - {int(max_year)}")
+    years = pd.to_numeric(df_filtered["year"], errors="coerce")
+    years = years[years > 0]  # ignore 0 or invalid
+    if not years.empty:
+        st.metric("📅 Year Range", f"{int(years.min())} - {int(years.max())}")
     else:
         st.metric("📅 Year Range", "N/A")
 
@@ -269,6 +269,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
