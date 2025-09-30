@@ -79,18 +79,10 @@ else:
 # --------------------------
 # Top Styles
 # --------------------------
+# --------------------------
+# Top Styles
+# --------------------------
 st.subheader("🎼 Top Styles")
-
-def clean_styles(row):
-    """Remove 'Black Metal' if a more specific Black Metal sub-style is present."""
-    if pd.isna(row):
-        return None
-    styles = [s.strip() for s in row.split(",")]
-    if "Black Metal" in styles:
-        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
-        if more_specific:
-            styles = [s for s in styles if s != "Black Metal"]
-    return styles
 
 df_styles = (
     df_filtered["styles"]
@@ -107,16 +99,24 @@ df_styles.columns = ["Style", "Count"]
 if df_styles.empty:
     st.warning("No valid styles found in your collection.")
 else:
+    max_count = df_styles["Count"].max()
+    df_styles["Highlight"] = df_styles["Count"].apply(
+        lambda x: "Max" if x == max_count else "Other"
+    )
+
     fig_styles = px.bar(
         df_styles,
         x="Count",
         y="Style",
         orientation="h",
         title="Top 15 Styles",
-        color="Count",
-        color_continuous_scale="Viridis"
+        color="Highlight",
+        color_discrete_map={
+            "Max": "#e74c3c",   # red
+            "Other": "#95a5a6"  # gray
+        }
     )
-    fig_styles.update_layout(yaxis=dict(categoryorder="total ascending"))
+    fig_styles.update_layout(showlegend=False, yaxis=dict(categoryorder="total ascending"))
     st.plotly_chart(fig_styles, use_container_width=True)
 
 # ---------------------
@@ -135,11 +135,10 @@ df_pressing = pd.DataFrame(
     columns=["Pressing Type", "Count"]
 )
 
-color_map = {
-    "Original Press": "#2ecc71",   # green
-    "Repress/Reissue": "#e67e22",  # orange
-    "Limited Edition": "#9b59b6"   # purple
-}
+max_count = df_pressing["Count"].max()
+df_pressing["Highlight"] = df_pressing["Count"].apply(
+    lambda x: "Max" if x == max_count else "Other"
+)
 
 fig_pressing = px.bar(
     df_pressing,
@@ -148,12 +147,15 @@ fig_pressing = px.bar(
     orientation="h",
     text="Count",
     title="Pressing Types in Your Collection",
-    color="Pressing Type",
-    color_discrete_map=color_map
+    color="Highlight",
+    color_discrete_map={
+        "Max": "#e74c3c",
+        "Other": "#95a5a6"
+    }
 )
 
 fig_pressing.update_traces(textposition="outside")
-fig_pressing.update_layout(yaxis=dict(categoryorder="total ascending"))
+fig_pressing.update_layout(showlegend=False, yaxis=dict(categoryorder="total ascending"))
 st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
@@ -198,4 +200,5 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
