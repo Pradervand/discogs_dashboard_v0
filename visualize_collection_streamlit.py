@@ -188,24 +188,13 @@ else:
 # Album Art Preview in Sidebar (grid)
 # --------------------------
 
-# Title + reload icon inline
-st.sidebar.markdown(
-    """
-    <div style="display:flex; align-items:center; justify-content:space-between;">
-        <h3 style="margin:0;">🎨 Random Album Covers</h3>
-        <form action="#" method="post">
-            <button name="reload" style="
-                border:none;
-                background:none;
-                cursor:pointer;
-                font-size:18px;
-                padding:0;
-            ">🔄</button>
-        </form>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# Header + reload button inline
+col1, col2 = st.sidebar.columns([5, 1])
+with col1:
+    st.markdown("### 🎨 Random Album Covers")
+with col2:
+    if st.button("🔄", key="reload_covers"):
+        st.session_state.random_albums = None  # reset so new sample is picked
 
 def pick_random_albums(df, n=12):
     valid = df.dropna(subset=["cover_url"])
@@ -213,14 +202,9 @@ def pick_random_albums(df, n=12):
         return valid.index.tolist()
     return random.sample(list(valid.index), n)
 
-# Initialize state
-if "random_albums" not in st.session_state:
+# Initialize or refresh covers
+if "random_albums" not in st.session_state or st.session_state.random_albums is None:
     st.session_state.random_albums = pick_random_albums(df_filtered)
-
-# Handle reload manually
-if "reload" in st.query_params:
-    st.session_state.random_albums = pick_random_albums(df_filtered)
-    st.query_params.clear()
 
 # Display covers in 3-column grid
 cols = st.sidebar.columns(3)
@@ -240,11 +224,13 @@ for i, idx in enumerate(st.session_state.random_albums):
                 unsafe_allow_html=True
             )
 
+
 # --------------------------
 # Data Preview
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
