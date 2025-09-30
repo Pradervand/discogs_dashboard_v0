@@ -349,23 +349,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# 🎵 Marketplace Prices
-prices = fetch_price_stats(release_id)
-if prices:
-    lowest = f"${prices['lowest']:.2f}" if prices['lowest'] else "N/A"
-    median = f"${prices['median']:.2f}" if prices['median'] else "N/A"
-    highest = f"${prices['highest']:.2f}" if prices['highest'] else "N/A"
-
-    st.sidebar.markdown(
-        f"""
-        **💵 Marketplace Prices (USD)**  
-        • Lowest: {lowest}  
-        • Median: {median}  
-        • Highest: {highest}
-        """,
-        unsafe_allow_html=True
-    )
-
  # Fetch videos
 videos = fetch_release_videos(release_id)
 if videos:
@@ -397,102 +380,12 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-# --------------------------
-# Random Album in Sidebar
-# --------------------------
-
-# Ensure we have album covers available
-if "all_covers" not in st.session_state:
-    st.session_state.all_covers = df.dropna(subset=["cover_url"])
-
-col1, col2 = st.sidebar.columns([5, 1])
-with col1:
-    st.markdown("### 🎨 Random Album")
-with col2:
-    if st.button("🔄", key="reload_album"):
-        st.session_state.random_album = None
-
-# Pick or refresh random album
-if "random_album" not in st.session_state or st.session_state.random_album is None:
-    st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
-
-album = st.session_state.random_album
-
-# Clean fields
-def clean_name(value):
-    if not value or str(value).lower() == "nan":
-        return "Unknown"
-    if isinstance(value, (list, tuple)):
-        return " / ".join(str(v).split(" (")[0] for v in value)
-    return str(value).split(" (")[0]
-
-cover_url = album.get("cover_url", "")
-release_id = album.get("release_id", "")
-artist = clean_name(album.get("artists", album.get("artist", "Unknown")))
-title = album.get("title", "Unknown")
-label = clean_name(album.get("labels", album.get("label", "Unknown")))
-year = album.get("year", "Unknown")
-
-link = f"https://www.discogs.com/release/{release_id}"
-
-# Album info block
-st.sidebar.markdown(
-    f"""
-    <div style="text-align:center;">
-        <a href="{link}" target="_blank">
-            <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-        </a>
-        <p><b>{artist}</b><br>{title}<br>
-        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# 🎥 Videos
-videos = fetch_release_videos(release_id)
-if videos:
-    st.sidebar.markdown("#### 🎥 Videos")
-    for v in videos:
-        uri = v.get("uri")
-        if uri:
-            if "youtube.com" in uri or "youtu.be" in uri:
-                st.sidebar.video(uri)
-            else:
-                st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
-
-# 🔄 Style reload button
-st.markdown(
-    """
-    <style>
-    div.stButton > button:first-child {
-        background: none !important;
-        border: none !important;
-        color: #e74c3c !important;
-        font-size: 20px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-    }
-    div.stButton > button:first-child:hover {
-        color: #c0392b !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-
 # --------------------------
 # Data Preview
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
