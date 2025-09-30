@@ -348,6 +348,20 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
+if prices:
+    st.sidebar.markdown(
+        f"""
+        <div style="text-align:center; padding:6px; border-radius:8px;
+                    background-color:#f9f9f9; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+            <p style="margin:0;"><b>💵 Marketplace Prices</b></p>
+            <p style="margin:4px 0;">Lowest: <span style="color:#27ae60;">{lowest}</span></p>
+            <p style="margin:4px 0;">Median: <span style="color:#2980b9;">{median}</span></p>
+            <p style="margin:4px 0;">Highest: <span style="color:#e74c3c;">{highest}</span></p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
  # Fetch videos
 videos = fetch_release_videos(release_id)
@@ -385,6 +399,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
