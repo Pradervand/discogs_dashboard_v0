@@ -101,7 +101,7 @@ with col1:
     st.image(oldest_album["thumb_url"], width=120)
     st.markdown(
         f"""
-        **{oldest_album['artist_name']} – {oldest_album['title']}**  
+        **{oldest_album['artist']} – {oldest_album['title']}**  
         *{oldest_album['label']} ({oldest_album['year']})*
         """
     )
@@ -113,7 +113,7 @@ with col2:
     st.image(least_collected_album["thumb_url"], width=120)
     st.markdown(
         f"""
-        **{least_collected_album['artist_name']} – {least_collected_album['title']}**  
+        **{least_collected_album['artist']} – {least_collected_album['title']}**  
         *{least_collected_album['label']} ({least_collected_album['year']})*  
         *(Collected by {least_collected_album['have']} users)*
         """
@@ -400,6 +400,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
