@@ -357,13 +357,12 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
 # --------------------------
 # Data Preview
 # --------------------------
-st.subheader("🔍 Data Preview")
-st.dataframe(df_filtered.head(50))
+st.subheader("🔍 Data")
+
+st.dataframe(df_filtered, use_container_width=True)
 
 
 
