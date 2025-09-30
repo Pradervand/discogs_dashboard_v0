@@ -77,7 +77,7 @@ else:
         y="Count",
         color="Highlight",
         title="Records by Year",
-        color_discrete_map={"Max": "#e74c3c", "Other": "#95a5a6"}
+        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
     fig_year.update_layout(showlegend=False)
     st.plotly_chart(fig_year, use_container_width=True)
@@ -114,7 +114,7 @@ else:
         orientation="h",
         title="Top 15 Styles",
         color="Highlight",
-        color_discrete_map={"Max": "#e74c3c", "Other": "#95a5a6"}
+        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
     fig_styles.update_layout(showlegend=False, yaxis=dict(categoryorder="total ascending"))
     st.plotly_chart(fig_styles, use_container_width=True)
@@ -148,7 +148,7 @@ fig_pressing = px.bar(
     text="Count",
     title="Pressing Types in Your Collection",
     color="Highlight",
-    color_discrete_map={"Max": "#e74c3c", "Other": "#95a5a6"}
+    color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
 )
 
 fig_pressing.update_traces(textposition="outside")
@@ -182,7 +182,7 @@ else:
         title=f"Discogs Collection Growth Over Time "
               f"(showing {len(df_time)} / {len(df_filtered)} records)",
         color_discrete_map={
-            "New records": "#95a5a6",  # gray
+            "New records": "#3498db",  # blue
             "Cumulative": "#e74c3c"    # red
         }
     )
@@ -197,3 +197,4 @@ else:
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
