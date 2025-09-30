@@ -206,6 +206,14 @@ else:
     if missing_added > 0:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
+import re
+
+def clean_name(name):
+    """Remove trailing disambiguation like ' (5)' from Discogs names."""
+    if not isinstance(name, str):
+        return name
+    return re.sub(r"\s*\(\d+\)$", "", name).strip()
+
 # --------------------------
 # Random Album Spotlight (Sidebar)
 # --------------------------
@@ -216,7 +224,6 @@ with col2:
     if st.button("🔄", key="reload_random_album"):
         st.session_state.random_album = None
 
-# Pick a single random album
 def pick_random_album(df):
     if df.empty:
         return None
@@ -232,8 +239,10 @@ if album is not None:
     link = f"https://www.discogs.com/release/{release_id}"
     title = album.get("title", "Unknown Title")
     year = album.get("year", "N/A")
-    labels = album.get("labels", "Unknown Label")
-    artists = album.get("artists", "Unknown Artist")
+
+    # Clean artist/label fields
+    artists = clean_name(album.get("artists", "Unknown Artist"))
+    labels = clean_name(album.get("labels", "Unknown Label"))
 
     st.sidebar.markdown(
         f"""
@@ -248,7 +257,7 @@ if album is not None:
         unsafe_allow_html=True
     )
 
-# Style the reload button as a red icon with no box
+# Style reload button
 st.markdown(
     """
     <style>
@@ -273,6 +282,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
