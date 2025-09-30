@@ -73,26 +73,36 @@ st.plotly_chart(fig_styles, use_container_width=True)
 # ==========================
 st.subheader("📈 Collection Growth Over Time")
 
+# Ensure "added" is datetime
+df_filtered["added"] = pd.to_datetime(df_filtered["added"], errors="coerce")
+
+# Drop rows with no valid date
 df_time = df_filtered.dropna(subset=["added"]).set_index("added").sort_index()
-monthly_adds = df_time.resample("M").size()
-cumulative = monthly_adds.cumsum()
 
-df_growth = pd.DataFrame({
-    "Month": monthly_adds.index,
-    "New records": monthly_adds.values,
-    "Cumulative": cumulative.values
-})
+if df_time.empty:
+    st.warning("No valid 'added' dates found in your collection.")
+else:
+    monthly_adds = df_time.resample("M").size()
+    cumulative = monthly_adds.cumsum()
 
-fig_growth = px.line(
-    df_growth,
-    x="Month",
-    y=["New records", "Cumulative"],
-    title="Discogs Collection Growth Over Time"
-)
-st.plotly_chart(fig_growth, use_container_width=True)
+    df_growth = pd.DataFrame({
+        "Month": monthly_adds.index,
+        "New records": monthly_adds.values,
+        "Cumulative": cumulative.values
+    })
+
+    fig_growth = px.line(
+        df_growth,
+        x="Month",
+        y=["New records", "Cumulative"],
+        title="Discogs Collection Growth Over Time"
+    )
+    st.plotly_chart(fig_growth, use_container_width=True)
+
 
 # ==========================
 # Raw Data Preview
 # ==========================
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
