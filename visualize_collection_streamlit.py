@@ -233,6 +233,11 @@ def fetch_release_videos(release_id):
 # --------------------------
 # Random Album in Sidebar
 # --------------------------
+
+# Ensure we have album covers available
+if "all_covers" not in st.session_state:
+    st.session_state.all_covers = df.dropna(subset=["cover_url"])
+
 col1, col2 = st.sidebar.columns([5, 1])
 with col1:
     st.markdown("### 🎨 Random Album")
@@ -243,6 +248,7 @@ with col2:
 # Pick or refresh random album
 if "random_album" not in st.session_state or st.session_state.random_album is None:
     st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
+
 
 album = st.session_state.random_album
 
@@ -319,6 +325,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
