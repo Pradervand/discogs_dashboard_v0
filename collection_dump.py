@@ -79,7 +79,8 @@ def fetch_all_releases(username, folder_id=0):
                 "styles": ", ".join(bi.get("styles", [])) if bi.get("styles") else None,
                 "added": item.get("date_added"),                
                 "rating": item.get("rating"),
-                # New flags
+                "cover_url": bi.get("cover_image"),   
+                "thumb_url": bi.get("thumb"),        
                 "is_limited": is_limited,
                 "is_reissue": is_reissue,
                 "is_original": is_original
@@ -99,3 +100,4 @@ if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
+
