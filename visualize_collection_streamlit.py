@@ -161,40 +161,35 @@ else:
 # ---------------------
 # Pressing Types (Proportions)
 # ---------------------
+# ---------------------
+# Pressing Types (Icon Representation)
+# ---------------------
 st.subheader("📀 Pressing Types in Collection")
 
 pressing_counts = {
     "Original Press": int(df_filtered["is_original"].sum()),
     "Repress/Reissue": int(df_filtered["is_reissue"].sum()),
-    "Limited Edition": int(df_filtered["is_limited"].sum()),
 }
-total = sum(pressing_counts.values())
 
-df_pressing = pd.DataFrame(
-    [(k, v, (v / total * 100 if total > 0 else 0)) for k, v in pressing_counts.items()],
-    columns=["Type", "Count", "Percent"]
-)
+# Choose scaling: 1 icon = 10 records
+ICON_SCALE = 10
+icons = {
+    "Original Press": "📀",
+    "Repress/Reissue": "🔁",
+}
 
-if df_pressing.empty or total == 0:
-    st.warning("No pressing type info available.")
-else:
-    df_pressing = df_pressing.sort_values("Percent", ascending=True)
-    max_type = df_pressing.loc[df_pressing["Percent"].idxmax(), "Type"]
-    df_pressing["Category"] = df_pressing["Type"].apply(lambda t: "Max" if t == max_type else "Other")
+# Display icons for each category
+for press_type, count in pressing_counts.items():
+    if count > 0:
+        num_icons = max(1, count // ICON_SCALE)  # at least 1 icon
+        st.markdown(
+            f"**{press_type}** ({count})<br>" +
+            "".join([icons[press_type]] * num_icons),
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(f"**{press_type}**: 0")
 
-    fig_pressing = px.bar(
-        df_pressing,
-        x="Percent",
-        y="Type",
-        orientation="h",
-        color="Category",
-        text=df_pressing["Percent"].map("{:.1f}%".format),
-        title="Proportion of Pressing Types (%)",
-        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
-    )
-    fig_pressing.update_traces(textposition="outside")
-    fig_pressing.update_layout(showlegend=False, xaxis_title="Percent (%)")
-    st.plotly_chart(fig_pressing, use_container_width=True)
 
 # --------------------------
 # Growth Over Time
@@ -348,6 +343,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
