@@ -280,16 +280,17 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+
  # Fetch videos
-    videos = fetch_release_videos(release_id)
-    if videos:
-        st.sidebar.markdown("#### 🎥 Videos")
-        for v in videos:
-            uri = v.get("uri")
-            if "youtube.com" in uri or "youtu.be" in uri:
-                st.sidebar.video(uri)
-            else:
-                st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
+videos = fetch_release_videos(release_id)
+if videos:
+    st.sidebar.markdown("#### 🎥 Videos")
+    for v in videos:
+        uri = v.get("uri")
+        if "youtube.com" in uri or "youtu.be" in uri:
+            st.sidebar.video(uri)
+        else:
+            st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
 # Style reload button (no gray box)
 st.markdown(
@@ -318,6 +319,7 @@ st.markdown(
 # --------------------------
 st.subheader("🔍 Data Preview")
 st.dataframe(df_filtered.head(50))
+
 
 
 
