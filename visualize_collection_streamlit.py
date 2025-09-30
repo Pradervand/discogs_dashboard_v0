@@ -361,9 +361,7 @@ if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highe
 
     st.sidebar.markdown(
         f"""
-        <div style="text-align:center; padding:6px; border-radius:8px;
-                    background-color:none; box-shadow:0 1px 3px rgba(0,0,0,0.1);
-                    margin-top:8px; font-size:90%;">
+        <div style="text-align:center; margin-top:8px; font-size:90%;">
             💵 <b>Prices (USD)</b><br>
             Lowest: <span style="color:#27ae60;">{low_s}</span><br>
             Median: <span style="color:#2980b9;">{med_s}</span><br>
@@ -372,6 +370,7 @@ if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highe
         """,
         unsafe_allow_html=True
     )
+
 
 # 🎥 Fetch videos
 videos = fetch_release_videos(release_id)
@@ -410,6 +409,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
