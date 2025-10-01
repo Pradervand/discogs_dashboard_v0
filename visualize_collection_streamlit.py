@@ -267,15 +267,24 @@ if not df_seller_stats.empty:
     with col2:
         st.metric("🔴 Most Expensive Seller", f"{most_exp['Seller']} ({most_exp['avg_price']:.2f} CHF avg)")
 
+    # Add color category: red for the most expensive seller, blue for the rest
+    df_seller_stats["Category"] = df_seller_stats["Seller"].apply(
+        lambda s: "Max" if s == most_exp["Seller"] else "Other"
+    )
+
     fig_sellers = px.bar(
         df_seller_stats.sort_values("avg_price"),
         x="avg_price",
         y="Seller",
         orientation="h",
+        color="Category",
         title="Average Price per Seller (min. 3 records)",
-        labels={"avg_price": "Avg Price (CHF)", "Seller": "Seller"}
+        labels={"avg_price": "Avg Price (CHF)", "Seller": "Seller"},
+        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
+    fig_sellers.update_layout(showlegend=False)
     st.plotly_chart(fig_sellers, use_container_width=True)
+
 
 # --------------------------
 # Growth Over Time
@@ -435,6 +444,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
