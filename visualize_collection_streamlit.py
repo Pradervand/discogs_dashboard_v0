@@ -319,6 +319,33 @@ title = album.get("title", "Unknown")
 label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
 
+link = f"https://www.discogs.com/release/{release_id}"
+
+def fetch_price_stats(release_id):
+    url = f"{BASE_URL}/marketplace/stats/{release_id}"
+    try:
+        r = requests.get(url, headers=headers)  # ✅ use global headers
+        r.raise_for_status()
+        data = r.json()
+
+        # Optional: debug the JSON
+        # st.sidebar.json(data)
+
+        return {
+            "lowest": data.get("lowest_price"),
+            "median": data.get("median_price"),
+            "highest": data.get("highest_price"),
+        }
+    except Exception as e:
+        st.sidebar.warning(f"⚠️ Price data unavailable for {release_id}: {e}")
+        return None
+
+# 🔹 Helper for formatting price
+def _fmt_price(value):
+    return f"${value:.2f}" if isinstance(value, (int, float)) else "N/A"
+
+# --- Fetch price stats (only one API call per random album) ---
+prices = fetch_price_stats(release_id)
 
 # Album info block
 st.sidebar.markdown(
@@ -335,6 +362,23 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+# --- Prices block (only if at least one price exists) ---
+if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highest")]):
+    low_s = _fmt_price(prices.get("lowest"))
+    med_s = _fmt_price(prices.get("median"))
+    high_s = _fmt_price(prices.get("highest"))
+
+    st.sidebar.markdown(
+        f"""
+        <div style="text-align:center; margin-top:8px; font-size:90%;">
+            💵 <b>Prices (USD)</b><br>
+            Lowest: <span style="color:#27ae60;">{low_s}</span><br>
+            Median: <span style="color:#2980b9;">{med_s}</span><br>
+            Highest: <span style="color:#e74c3c;">{high_s}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # 🎥 Fetch videos
