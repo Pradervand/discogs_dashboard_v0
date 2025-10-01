@@ -286,7 +286,7 @@ if not df_seller_stats.empty:
     st.plotly_chart(fig_sellers, use_container_width=True)
 
 # --------------------------
-# Bands by Country (Interactive Bubble Map)
+# Bands by Country (Choropleth Map)
 # --------------------------
 st.subheader("🌍 Bands by Country")
 
@@ -301,27 +301,15 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     )
     country_counts.columns = ["Country", "Count"]
 
-    # Bubble map with improved visuals
-    fig_country = px.scatter_geo(
+    # Choropleth map with a modern blue scale
+    fig_country = px.choropleth(
         country_counts,
         locations="Country",
-        locationmode="ISO-3",   # or "country names" if BandCountry holds full names
-        size="Count",
-        hover_name="Country",
-        hover_data={"Count": True, "Country": False},
-        title="Bands by Country in My Collection",
-        projection="natural earth",
-        size_max=50,
+        locationmode="ISO-3",   # switch to "country names" if needed
         color="Count",
-        color_continuous_scale=px.colors.sequential.Plasma
-    )
-
-    fig_country.update_traces(
-        marker=dict(
-            line=dict(width=0.8, color="white"),
-            sizemode="area",
-            opacity=0.8
-        )
+        hover_name="Country",
+        title="Bands by Country in My Collection",
+        color_continuous_scale=px.colors.sequential.Teal,  # softer blue/teal gradient
     )
 
     fig_country.update_layout(
@@ -499,6 +487,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
