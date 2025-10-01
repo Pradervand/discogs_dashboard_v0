@@ -285,6 +285,43 @@ if not df_seller_stats.empty:
     fig_sellers.update_layout(showlegend=False)
     st.plotly_chart(fig_sellers, use_container_width=True)
 
+# --------------------------
+# Bands by Country
+# --------------------------
+st.subheader("🌍 Bands by Country")
+
+if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropna().empty:
+    # Count records per country
+    country_counts = (
+        df_filtered["BandCountry"]
+        .dropna()
+        .str.upper()
+        .value_counts()
+        .reset_index()
+    )
+    country_counts.columns = ["Country", "Count"]
+
+    # Choropleth map (using ISO Alpha-3 codes if BandCountry already matches them,
+    # otherwise needs a mapping from 2-letter to 3-letter codes)
+    fig_country = px.choropleth(
+        country_counts,
+        locations="Country",
+        locationmode="ISO-3",  # or "country names" if values are full names instead of codes
+        color="Count",
+        hover_name="Country",
+        title="Proportion of Bands by Country in Collection",
+        color_continuous_scale=px.colors.sequential.Blues
+    )
+
+    fig_country.update_layout(
+        geo=dict(showframe=False, showcoastlines=True, projection_type="equirectangular")
+    )
+    st.plotly_chart(fig_country, use_container_width=True)
+
+    # Show table as well
+    st.dataframe(country_counts)
+else:
+    st.info("No country data available in BandCountry field.")
 
 # --------------------------
 # Growth Over Time
@@ -444,6 +481,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
