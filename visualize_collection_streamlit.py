@@ -285,11 +285,11 @@ if not df_seller_stats.empty:
     fig_sellers.update_layout(showlegend=False)
     st.plotly_chart(fig_sellers, use_container_width=True)
 # --------------------------
-# Bands by Country (Recap with Flags)
+# Bands by Country (Recap with Flags + Toggle Table)
 # --------------------------
 
 # Full ISO3 -> ISO2 mapping (complete world list)
-ISO3_TO_ISO2 = {
+ISO3_TO_ISO2 = { 
     "AFG": "AF", "ALA": "AX", "ALB": "AL", "DZA": "DZ", "ASM": "AS", "AND": "AD",
     "AGO": "AO", "AIA": "AI", "ATA": "AQ", "ATG": "AG", "ARG": "AR", "ARM": "AM",
     "ABW": "AW", "AUS": "AU", "AUT": "AT", "AZE": "AZ", "BHS": "BS", "BHR": "BH",
@@ -366,12 +366,14 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
                 st.image(flag_url, width=48)
             st.metric(row["Country"], f"{count} bands")
 
-    # --- Full recap table ---
-    st.markdown("### 📋 All Countries")
-    st.dataframe(country_counts, use_container_width=True)
+    # --- Toggle full recap table ---
+    if st.checkbox("Show full country table", value=False):
+        st.markdown("### 📋 All Countries")
+        st.dataframe(country_counts, use_container_width=True)
 
 else:
     st.info("No country data available in BandCountry field.")
+
 
 
 
@@ -533,6 +535,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
