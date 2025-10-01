@@ -1,13 +1,16 @@
 import requests
 import time
 import pandas as pd
+import streamlit as st
 
 BASE_URL = "https://api.discogs.com"
 USER_AGENT = "Discogs Collection Dashboard"
-# headers with your token must be passed in the app
-headers = None
+headers = None  # set later with set_auth()
 
 
+# -----------------------
+# Auth
+# -----------------------
 def set_auth(token: str):
     """Set global headers for Discogs API auth."""
     global headers
@@ -17,52 +20,78 @@ def set_auth(token: str):
     }
 
 
-def get_collection_folder_releases(username, folder_id=0, page=1, per_page=100):
+# -----------------------
+# Safe request wrapper
+# -----------------------
+def safe_request(url, params=None, progress=None):
+    """Perform a GET request with automatic handling of Discogs rate limits (429)."""
+    while True:
+        resp = requests.get(url, headers=headers, params=params)
+
+        if resp.status_code == 429:  # Too Many Requests
+            reset_after = int(resp.headers.get("Retry-After", 60))
+            msg = f"⚠️ Rate limit hit. Pausing for {reset_after} seconds..."
+            print(msg)
+            if progress:
+                progress.text(msg)
+            time.sleep(reset_after)
+            continue  # retry after sleeping
+
+        resp.raise_for_status()
+        return resp.json()
+
+
+# -----------------------
+# API helpers
+# -----------------------
+def get_collection_folder_releases(username, folder_id=0, page=1, per_page=100, progress=None):
     url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases"
     params = {"page": page, "per_page": per_page}
-    resp = requests.get(url, headers=headers, params=params)
-    resp.raise_for_status()
-    return resp.json()
+    return safe_request(url, params=params, progress=progress)
 
 
-def get_custom_fields_map(username):
-    """Return {field_name: field_id} mapping for user-defined fields."""
+def get_custom_fields_map(username, progress=None):
     url = f"{BASE_URL}/users/{username}/collection/fields"
     try:
-        resp = requests.get(url, headers=headers)
-        resp.raise_for_status()
-        fields = resp.json().get("fields", [])
+        fields = safe_request(url, progress=progress).get("fields", [])
         return {f.get("name"): f.get("id") for f in fields if "name" in f and "id" in f}
     except Exception as e:
         print(f"Warning: could not fetch custom fields: {e}")
         return {}
 
 
-def get_instance_fields(username, folder_id, release_id, instance_id):
-    """Fetch custom fields for a release instance."""
+def get_instance_fields(username, folder_id, release_id, instance_id, progress=None):
     if not instance_id:
         return []
     url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases/{release_id}/instances/{instance_id}"
     try:
-        resp = requests.get(url, headers=headers)
-        resp.raise_for_status()
-        return resp.json().get("fields", []) or []
+        return safe_request(url, progress=progress).get("fields", []) or []
     except Exception as e:
-        print(f"Warning: failed instance fetch for {release_id}/{instance_id}: {e}")
+        print(f"Warning: failed to fetch instance fields for {release_id}/{instance_id}: {e}")
         return []
 
 
+# -----------------------
+# Main fetcher
+# -----------------------
 def fetch_all_releases(username, folder_id=0):
     """
     Fetch collection and return DataFrame with full metadata
     + PricePaid, Seller, BandCountry fields.
+    Includes progress bar and automatic rate-limit handling.
     """
     all_records = []
     page = 1
     per_page = 100
 
-    # map custom fields
-    field_name_to_id = get_custom_fields_map(username)
+    # progress bar setup
+    first_page = get_collection_folder_releases(username, folder_id, page=1, per_page=1)
+    total_records = first_page["pagination"]["items"]
+    fetched = 0
+    progress = st.progress(0, text=f"Fetching releases (0 / {total_records})")
+
+    # get custom field map
+    field_name_to_id = get_custom_fields_map(username, progress=progress)
     price_id = field_name_to_id.get("PricePaid") or 4
     seller_id = field_name_to_id.get("Seller") or 5
     bandcountry_id = field_name_to_id.get("BandCountry") or 6
@@ -70,7 +99,7 @@ def fetch_all_releases(username, folder_id=0):
     instance_cache = {}
 
     while True:
-        data = get_collection_folder_releases(username, folder_id, page=page, per_page=per_page)
+        data = get_collection_folder_releases(username, folder_id, page=page, per_page=per_page, progress=progress)
         releases = data.get("releases", [])
         if not releases:
             break
@@ -91,7 +120,6 @@ def fetch_all_releases(username, folder_id=0):
             instance_id = item.get("instance_id")
             release_id = bi.get("id")
 
-            # defaults
             price_paid_val = None
             seller_val = None
             bandcountry_val = None
@@ -101,13 +129,13 @@ def fetch_all_releases(username, folder_id=0):
                 if cache_key in instance_cache:
                     field_dict = instance_cache[cache_key]
                 else:
-                    field_values = get_instance_fields(username, folder_id, release_id, instance_id)
+                    field_values = get_instance_fields(username, folder_id, release_id, instance_id, progress=progress)
                     field_dict = {
                         fv.get("field_id"): fv.get("value")
                         for fv in field_values if fv.get("field_id") is not None
                     }
                     instance_cache[cache_key] = field_dict
-                    time.sleep(1)  # protect API rate limit
+                    time.sleep(1)  # normal pacing to avoid burst
 
                 price_paid_val = field_dict.get(price_id)
                 seller_val = field_dict.get(seller_id)
@@ -137,10 +165,15 @@ def fetch_all_releases(username, folder_id=0):
 
             all_records.append(rec)
 
+            # update progress bar
+            fetched += 1
+            progress.progress(fetched / total_records, text=f"Fetching releases ({fetched} / {total_records})")
+
         pagination = data.get("pagination", {})
         if page >= pagination.get("pages", 0):
             break
         page += 1
-        time.sleep(0.5)
+        time.sleep(0.5)  # gentle pause between pages
 
+    progress.empty()
     return pd.DataFrame(all_records)
