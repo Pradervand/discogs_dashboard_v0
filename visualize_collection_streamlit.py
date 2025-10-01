@@ -286,7 +286,7 @@ if not df_seller_stats.empty:
     st.plotly_chart(fig_sellers, use_container_width=True)
 
 # --------------------------
-# Bands by Country
+# Bands by Country (Interactive Bubble Map)
 # --------------------------
 st.subheader("🌍 Bands by Country")
 
@@ -301,27 +301,45 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     )
     country_counts.columns = ["Country", "Count"]
 
-    # Choropleth map (using ISO Alpha-3 codes if BandCountry already matches them,
-    # otherwise needs a mapping from 2-letter to 3-letter codes)
-    fig_country = px.choropleth(
+    # Bubble map with improved visuals
+    fig_country = px.scatter_geo(
         country_counts,
         locations="Country",
-        locationmode="ISO-3",  # or "country names" if values are full names instead of codes
-        color="Count",
+        locationmode="ISO-3",   # or "country names" if BandCountry holds full names
+        size="Count",
         hover_name="Country",
-        title="Proportion of Bands by Country in Collection",
-        color_continuous_scale=px.colors.sequential.Blues
+        hover_data={"Count": True, "Country": False},
+        title="Bands by Country in My Collection",
+        projection="natural earth",
+        size_max=50,
+        color="Count",
+        color_continuous_scale=px.colors.sequential.Plasma
+    )
+
+    fig_country.update_traces(
+        marker=dict(
+            line=dict(width=0.8, color="white"),
+            sizemode="area",
+            opacity=0.8
+        )
     )
 
     fig_country.update_layout(
-        geo=dict(showframe=False, showcoastlines=True, projection_type="equirectangular")
+        geo=dict(
+            showframe=False,
+            showcoastlines=True,
+            coastlinecolor="LightGray",
+            landcolor="whitesmoke",
+            showland=True,
+            projection_type="natural earth"
+        ),
+        margin=dict(l=0, r=0, t=40, b=0)
     )
-    st.plotly_chart(fig_country, use_container_width=True)
 
-    # Show table as well
-    st.dataframe(country_counts)
+    st.plotly_chart(fig_country, use_container_width=True)
 else:
     st.info("No country data available in BandCountry field.")
+
 
 # --------------------------
 # Growth Over Time
@@ -481,6 +499,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
