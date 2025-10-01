@@ -320,65 +320,51 @@ label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
 
 link = f"https://www.discogs.com/release/{release_id}"
-def fetch_price_stats(release_id, currency="EUR"):
+def fetch_price_stats(release_id):
     url = f"{BASE_URL}/marketplace/stats/{release_id}"
-    params = {"curr_abbr": currency}
     try:
-        r = requests.get(url, headers=headers, params=params)  # ✅ use global headers
+        r = requests.get(url, headers=headers)
         r.raise_for_status()
         data = r.json()
 
-        # Debug if needed
-        # st.sidebar.json(data)
-
         return {
-            "lowest": (data.get("lowest_price") or {}).get("value"),
-            "median": (data.get("median_price") or {}).get("value"),
-            "highest": (data.get("highest_price") or {}).get("value"),
+            "lowest": data.get("lowest_price", {}).get("value"),
+            "median": data.get("median_price", {}).get("value"),
+            "highest": data.get("highest_price", {}).get("value"),
         }
     except Exception as e:
         st.sidebar.warning(f"⚠️ Price data unavailable for {release_id}: {e}")
         return None
 
-
 # 🔹 Helper for formatting price
-def _fmt_price(value, currency="€"):
-    return f"{currency}{value:.2f}" if isinstance(value, (int, float)) else "N/A"
-
+def _fmt_price(value):
+    return f"${value:.2f}" if isinstance(value, (int, float)) else "N/A"
 
 # --- Fetch price stats (only one API call per random album) ---
 prices = fetch_price_stats(release_id)
 
-# Album info block
-st.sidebar.markdown(
-    f"""
-    <div style="text-align:center;">
-        <a href="{link}" target="_blank">
-            <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
-        </a>
-        <p><b>{artist}</b><br>{title}<br>
-        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# --- Prices block (only if at least one price exists) ---
-if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highest")]):
+# Album info block (with prices below label/year)
+if prices:
     low_s = _fmt_price(prices.get("lowest"))
     med_s = _fmt_price(prices.get("median"))
     high_s = _fmt_price(prices.get("highest"))
 
     st.sidebar.markdown(
         f"""
-        <p style="text-align:center; margin-top:6px;">
-            💵 <b>Marketplace</b><br>
-            Lowest: <span style="color:#27ae60;">{low_s}</span><br>
-            Median: <span style="color:#2980b9;">{med_s}</span><br>
-            Highest: <span style="color:#e74c3c;">{high_s}</span>
-        </p>
+        <div style="text-align:center;">
+            <a href="{link}" target="_blank">
+                <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+            </a>
+            <p><b>{artist}</b><br>{title}<br>
+            <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
+            <p style="margin-top:6px; font-size:90%;">
+                💵 <b>Prices</b><br>
+                Min: <span style="color:#27ae60;">{low_s}</span> · 
+                Median: <span style="color:#2980b9;">{med_s}</span> · 
+                Max: <span style="color:#e74c3c;">{high_s}</span>
+            </p>
+        </div>
         """,
         unsafe_allow_html=True
     )
@@ -422,6 +408,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
