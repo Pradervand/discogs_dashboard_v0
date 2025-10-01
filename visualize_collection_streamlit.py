@@ -69,8 +69,9 @@ with col1:
     st.metric("🎵 Total Records", f"{len(df_filtered):,}")
 
 with col2:
-    unique_artists = df_filtered["artists"].nunique()
-    st.metric("👨‍🎤 Unique Artists", f"{unique_artists:,}")
+    total_spent = pd.to_numeric(df_filtered["PricePaid"], errors="coerce").sum()
+    st.metric("💰 Total Spent (CHF)", f"{total_spent:,.2f}")
+
 
 with col3:
     years = pd.to_numeric(df_filtered["year"], errors="coerce")
@@ -364,4 +365,5 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
