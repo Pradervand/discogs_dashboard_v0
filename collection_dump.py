@@ -38,7 +38,7 @@ def get_collection_folder_releases(username, folder_id=0, page=1, per_page=100):
 
 def fetch_all_releases(username, folder_id=0):
     """
-    Loop through all pages to fetch all releases.
+    Loop through all pages to fetch all releases, including custom fields.
     """
     all_records = []
     page = 1
@@ -60,12 +60,14 @@ def fetch_all_releases(username, folder_id=0):
                 if "descriptions" in f:
                     fmt_desc.extend(f["descriptions"])
 
-            # Normalize to lowercase for detection
             fmt_desc_lower = [d.lower() for d in fmt_desc]
 
             is_reissue = any("repress" in d or "reissue" in d for d in fmt_desc_lower)
             is_limited = any("limited edition" in d for d in fmt_desc_lower)
-            is_original = not is_reissue  # If not tagged as repress/reissue → original press
+            is_original = not is_reissue
+
+            # --- Custom fields (PricePaid, Seller, BandCountry) ---
+            custom_fields = {f["id"]: f.get("value") for f in item.get("fields", []) if "id" in f}
 
             rec = {
                 "release_id": bi.get("id"),
@@ -83,7 +85,11 @@ def fetch_all_releases(username, folder_id=0):
                 "thumb_url": bi.get("thumb"),        
                 "is_limited": is_limited,
                 "is_reissue": is_reissue,
-                "is_original": is_original
+                "is_original": is_original,
+                # Custom fields mapped by ID
+                "PricePaid": custom_fields.get(4),
+                "Seller": custom_fields.get(5),
+                "BandCountry": custom_fields.get(6),
             }
             
             all_records.append(rec)
@@ -97,10 +103,12 @@ def fetch_all_releases(username, folder_id=0):
     
     return pd.DataFrame(all_records)
 
+
 if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
+
 
 
 
