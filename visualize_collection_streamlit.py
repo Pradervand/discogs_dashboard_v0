@@ -319,6 +319,7 @@ title = album.get("title", "Unknown")
 label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
 
+
 # Album info block
 st.sidebar.markdown(
     f"""
@@ -333,6 +334,7 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 # 🎥 Fetch videos
@@ -372,10 +374,6 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
-
-
-
-
 
 
 
