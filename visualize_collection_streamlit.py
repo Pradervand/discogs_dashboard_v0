@@ -206,7 +206,6 @@ st.markdown(f"<div style='text-align:center; font-size:32px;'>{icons_html}</div>
 
 legend_html = " ".join([f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_rows])
 st.markdown(f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>", unsafe_allow_html=True)
-
 # --------------------------
 # Growth Over Time
 # --------------------------
@@ -221,6 +220,32 @@ else:
     monthly_adds = df_time.resample("M").size()
     cumulative = monthly_adds.cumsum()
 
+    # --- Extra stats ---
+    avg_per_month = monthly_adds.mean()
+    most_active_month = monthly_adds.idxmax()
+    most_active_count = monthly_adds.max()
+
+    # Growth last 12 months vs previous 12
+    if len(monthly_adds) >= 24:
+        last_12 = monthly_adds[-12:].sum()
+        prev_12 = monthly_adds[-24:-12].sum()
+        growth_pct = ((last_12 - prev_12) / prev_12 * 100) if prev_12 > 0 else None
+    else:
+        last_12, prev_12, growth_pct = None, None, None
+
+    # --- Metrics Row ---
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("📊 Avg per Month", f"{avg_per_month:.1f}")
+    with col2:
+        st.metric("🔥 Busiest Month", f"{most_active_count} records", str(most_active_month.strftime("%B %Y")))
+    with col3:
+        if growth_pct is not None:
+            st.metric("📈 Last 12M Growth", f"{last_12} records", f"{growth_pct:+.1f}% vs prev 12M")
+        else:
+            st.metric("📈 Last 12M Growth", "N/A")
+
+    # --- Plot ---
     df_growth = pd.DataFrame({
         "Month": monthly_adds.index,
         "New records": monthly_adds.values,
@@ -240,6 +265,7 @@ else:
     if missing_added > 0:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
+
 
 # --------------------------
 # Random Album in Sidebar
@@ -338,3 +364,4 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
