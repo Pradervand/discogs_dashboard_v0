@@ -2,3 +2,4 @@ streamlit
 plotly
 pandas
 requests
+requests_oauthlib
