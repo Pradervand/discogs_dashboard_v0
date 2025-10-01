@@ -2,23 +2,33 @@ import requests
 import time
 import pandas as pd
 import streamlit as st
+from requests_oauthlib import OAuth1
 
+# -----------------------
+# Config
+# -----------------------
 BASE_URL = "https://api.discogs.com"
 USER_AGENT = "Discogs Collection Dashboard"
-headers = None  # set later with set_auth()
 
+# Fill in with your OAuth1 credentials
+CONSUMER_KEY = "NNzITfKaEgvPJUmTvUQJ"
+CONSUMER_SECRET = "CQOUAamarejgrqLUmeqGwxXPfvTwDsyW"
+OAUTH_TOKEN = "SkQsCJblkmEYVsMcOjnijXpjRJnIcBsIFvyATgLf"
+OAUTH_TOKEN_SECRET = "BRAkgpOzowAiaEoWQDofRPxLxZUtowdZBUfKqctB"
+USERNAME = "Niolu"
+FOLDER_ID = 0
 
 # -----------------------
-# Auth
+# Auth setup
 # -----------------------
-def set_auth(token: str):
-    """Set global headers for Discogs API auth."""
-    global headers
-    headers = {
-        "User-Agent": USER_AGENT,
-        "Authorization": f"Discogs token={token}"
-    }
+auth = OAuth1(
+    CONSUMER_KEY,
+    client_secret=CONSUMER_SECRET,
+    resource_owner_key=OAUTH_TOKEN,
+    resource_owner_secret=OAUTH_TOKEN_SECRET
+)
 
+headers = {"User-Agent": USER_AGENT}
 
 # -----------------------
 # Safe request wrapper
@@ -26,7 +36,7 @@ def set_auth(token: str):
 def safe_request(url, params=None, progress=None):
     """Perform a GET request with automatic handling of Discogs rate limits (429)."""
     while True:
-        resp = requests.get(url, headers=headers, params=params)
+        resp = requests.get(url, headers=headers, params=params, auth=auth)
 
         if resp.status_code == 429:  # Too Many Requests
             reset_after = int(resp.headers.get("Retry-After", 60))
@@ -39,7 +49,6 @@ def safe_request(url, params=None, progress=None):
 
         resp.raise_for_status()
         return resp.json()
-
 
 # -----------------------
 # API helpers
@@ -69,7 +78,6 @@ def get_instance_fields(username, folder_id, release_id, instance_id, progress=N
     except Exception as e:
         print(f"Warning: failed to fetch instance fields for {release_id}/{instance_id}: {e}")
         return []
-
 
 # -----------------------
 # Main fetcher
