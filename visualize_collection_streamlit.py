@@ -286,7 +286,7 @@ if not df_seller_stats.empty:
     st.plotly_chart(fig_sellers, use_container_width=True)
 
 # --------------------------
-# Bands by Country (Choropleth Map)
+# Bands by Country (Recap)
 # --------------------------
 st.subheader("🌍 Bands by Country")
 
@@ -301,30 +301,28 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     )
     country_counts.columns = ["Country", "Count"]
 
-    # Choropleth map with a modern blue scale
-    fig_country = px.choropleth(
-        country_counts,
-        locations="Country",
-        locationmode="ISO-3",   # switch to "country names" if needed
-        color="Count",
-        hover_name="Country",
-        title="Bands by Country in My Collection",
-        color_continuous_scale=px.colors.sequential.Sunset  
-    )
+    # --- Top 5 countries with flags ---
+    st.markdown("### 🏳️ Top 5 Countries")
 
-    fig_country.update_layout(
-        geo=dict(
-            showframe=False,
-            showcoastlines=True,
-            coastlinecolor="LightGray",
-            landcolor="whitesmoke",
-            showland=True,
-            projection_type="natural earth"
-        ),
-        margin=dict(l=0, r=0, t=40, b=0)
-    )
+    top5 = country_counts.head(5)
+    cols = st.columns(len(top5))
 
-    st.plotly_chart(fig_country, use_container_width=True)
+    for i, row in top5.iterrows():
+        country_code = row["Country"].upper()
+        count = row["Count"]
+
+        # Use Twemoji flag CDN (works with ISO 2-letter codes)
+        flag = f"https://flagcdn.com/48x36/{country_code.lower()}.png" if len(country_code) == 2 else None
+
+        with cols[list(top5.index).index(i)]:
+            if flag:
+                st.image(flag, width=48)
+            st.metric(country_code, f"{count} bands")
+
+    # --- Full recap table ---
+    st.markdown("### 📋 All Countries")
+    st.dataframe(country_counts, use_container_width=True)
+
 else:
     st.info("No country data available in BandCountry field.")
 
@@ -487,6 +485,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
