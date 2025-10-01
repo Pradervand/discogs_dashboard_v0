@@ -207,6 +207,76 @@ st.markdown(f"<div style='text-align:center; font-size:32px;'>{icons_html}</div>
 
 legend_html = " ".join([f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_rows])
 st.markdown(f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>", unsafe_allow_html=True)
+
+# --------------------------
+# Spending & Sellers Analysis
+# --------------------------
+st.subheader("💸 Spending & Sellers Insights")
+
+# Ensure numeric PricePaid
+df_filtered["PricePaid"] = pd.to_numeric(df_filtered["PricePaid"], errors="coerce")
+
+# Monthly spending trend
+if not df_filtered["added"].isna().all():
+    monthly_spending = (
+        df_filtered.dropna(subset=["added", "PricePaid"])
+        .set_index("added")
+        .resample("M")["PricePaid"]
+        .sum()
+    )
+    avg_monthly = monthly_spending.mean()
+
+    st.metric("📊 Monthly Avg Spending", f"{avg_monthly:.2f} CHF")
+
+    fig_spending = px.line(
+        monthly_spending,
+        x=monthly_spending.index,
+        y=monthly_spending.values,
+        title="Monthly Spending (CHF)",
+        labels={"x": "Month", "y": "Total Spent (CHF)"}
+    )
+    st.plotly_chart(fig_spending, use_container_width=True)
+
+# Favourite Seller
+if "Seller" in df_filtered.columns:
+    seller_counts = df_filtered["Seller"].value_counts()
+    fav_seller = seller_counts.idxmax() if not seller_counts.empty else None
+    fav_count = seller_counts.max() if not seller_counts.empty else 0
+    st.metric("🏆 Favourite Seller", f"{fav_seller} ({fav_count} records)")
+
+# Seller analysis: cheapest & most expensive (avg price, >3 records)
+df_seller_stats = (
+    df_filtered.dropna(subset=["Seller", "PricePaid"])
+    .groupby("Seller")
+    .agg(
+        records=("PricePaid", "count"),
+        avg_price=("PricePaid", "mean")
+    )
+    .reset_index()
+)
+
+df_seller_stats = df_seller_stats[df_seller_stats["records"] > 3]
+
+if not df_seller_stats.empty:
+    cheapest = df_seller_stats.loc[df_seller_stats["avg_price"].idxmin()]
+    most_exp = df_seller_stats.loc[df_seller_stats["avg_price"].idxmax()]
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("🟢 Cheapest Seller", f"{cheapest['Seller']} ({cheapest['avg_price']:.2f} CHF avg)")
+    with col2:
+        st.metric("🔴 Most Expensive Seller", f"{most_exp['Seller']} ({most_exp['avg_price']:.2f} CHF avg)")
+
+    fig_sellers = px.bar(
+        df_seller_stats.sort_values("avg_price"),
+        x="avg_price",
+        y="Seller",
+        orientation="h",
+        title="Average Price per Seller (min. 3 records)",
+        labels={"avg_price": "Avg Price (CHF)", "Seller": "Seller"}
+    )
+    st.plotly_chart(fig_sellers, use_container_width=True)
+
 # --------------------------
 # Growth Over Time
 # --------------------------
@@ -365,5 +435,6 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
