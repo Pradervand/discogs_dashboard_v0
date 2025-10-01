@@ -319,6 +319,21 @@ title = album.get("title", "Unknown")
 label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
 
+# Album info block
+st.sidebar.markdown(
+    f"""
+    <div style="text-align:center;">
+        <a href="{link}" target="_blank">
+            <img src="{cover_url}" style="width:100%; border-radius:8px; margin-bottom:8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);"/>
+        </a>
+        <p><b>{artist}</b><br>{title}<br>
+        <span style="color:gray; font-size:90%;">{label}, {year}</span></p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # 🎥 Fetch videos
 videos = fetch_release_videos(release_id)
@@ -357,6 +372,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
