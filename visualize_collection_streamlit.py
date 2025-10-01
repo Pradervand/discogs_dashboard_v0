@@ -320,29 +320,31 @@ label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
 
 link = f"https://www.discogs.com/release/{release_id}"
-
-def fetch_price_stats(release_id):
+def fetch_price_stats(release_id, currency="EUR"):
     url = f"{BASE_URL}/marketplace/stats/{release_id}"
+    params = {"curr_abbr": currency}
     try:
-        r = requests.get(url, headers=headers)  # ✅ use global headers
+        r = requests.get(url, headers=headers, params=params)  # ✅ use global headers
         r.raise_for_status()
         data = r.json()
 
-        # Optional: debug the JSON
+        # Debug if needed
         # st.sidebar.json(data)
 
         return {
-            "lowest": data.get("lowest_price"),
-            "median": data.get("median_price"),
-            "highest": data.get("highest_price"),
+            "lowest": (data.get("lowest_price") or {}).get("value"),
+            "median": (data.get("median_price") or {}).get("value"),
+            "highest": (data.get("highest_price") or {}).get("value"),
         }
     except Exception as e:
         st.sidebar.warning(f"⚠️ Price data unavailable for {release_id}: {e}")
         return None
 
+
 # 🔹 Helper for formatting price
-def _fmt_price(value):
-    return f"${value:.2f}" if isinstance(value, (int, float)) else "N/A"
+def _fmt_price(value, currency="€"):
+    return f"{currency}{value:.2f}" if isinstance(value, (int, float)) else "N/A"
+
 
 # --- Fetch price stats (only one API call per random album) ---
 prices = fetch_price_stats(release_id)
@@ -362,6 +364,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+
 # --- Prices block (only if at least one price exists) ---
 if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highest")]):
     low_s = _fmt_price(prices.get("lowest"))
@@ -370,15 +373,16 @@ if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highe
 
     st.sidebar.markdown(
         f"""
-        <div style="text-align:center; margin-top:8px; font-size:90%;">
-            💵 <b>Prices (USD)</b><br>
+        <p style="text-align:center; margin-top:6px;">
+            💵 <b>Marketplace</b><br>
             Lowest: <span style="color:#27ae60;">{low_s}</span><br>
             Median: <span style="color:#2980b9;">{med_s}</span><br>
             Highest: <span style="color:#e74c3c;">{high_s}</span>
-        </div>
+        </p>
         """,
         unsafe_allow_html=True
     )
+
 
 
 # 🎥 Fetch videos
@@ -418,6 +422,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
