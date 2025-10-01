@@ -285,6 +285,15 @@ if not df_seller_stats.empty:
     fig_sellers.update_layout(showlegend=False)
     st.plotly_chart(fig_sellers, use_container_width=True)
 
+import pycountry
+
+def iso3_to_iso2(iso3):
+    """Convert ISO3 country code (e.g. 'BEL') to ISO2 (e.g. 'BE')."""
+    try:
+        return pycountry.countries.get(alpha_3=iso3).alpha_2
+    except:
+        return None
+
 # --------------------------
 # Bands by Country (Recap)
 # --------------------------
@@ -308,16 +317,14 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     cols = st.columns(len(top5))
 
     for i, row in top5.iterrows():
-        country_code = row["Country"].upper()
+        iso2 = iso3_to_iso2(row["Country"])
         count = row["Count"]
 
-        # Use Twemoji flag CDN (works with ISO 2-letter codes)
-        flag = f"https://flagcdn.com/48x36/{country_code.lower()}.png" if len(country_code) == 2 else None
-
         with cols[list(top5.index).index(i)]:
-            if flag:
-                st.image(flag, width=48)
-            st.metric(country_code, f"{count} bands")
+            if iso2:
+                flag_url = f"https://flagcdn.com/48x36/{iso2.lower()}.png"
+                st.image(flag_url, width=48)
+            st.metric(row["Country"], f"{count} bands")
 
     # --- Full recap table ---
     st.markdown("### 📋 All Countries")
@@ -485,6 +492,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
