@@ -309,7 +309,7 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
         color="Count",
         hover_name="Country",
         title="Bands by Country in My Collection",
-        px.colors.sequential.Sunset  
+        color_continuous_scale=px.colors.sequential.Sunset  
     )
 
     fig_country.update_layout(
