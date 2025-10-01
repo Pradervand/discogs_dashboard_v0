@@ -74,7 +74,9 @@ def get_instance_fields(username, folder_id, release_id, instance_id, progress=N
         return []
     url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases/{release_id}/instances/{instance_id}"
     try:
-        return safe_request(url, progress=progress).get("fields", []) or []
+        data = safe_request(url, progress=progress)
+        # ✅ Discogs stores custom field values in "notes", not "fields"
+        return data.get("notes", []) or []
     except Exception as e:
         print(f"Warning: failed to fetch instance fields for {release_id}/{instance_id}: {e}")
         return []
