@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.express as px
 import random
 from collection_dump import fetch_all_releases
+import requests
+import re
 
 USER_TOKEN = st.secrets["DISCOGS_TOKEN"]
 USERNAME = st.secrets["DISCOGS_USERNAME"]
@@ -40,7 +42,8 @@ df["added"] = pd.to_datetime(
 # --------------------------
 # Sidebar filters
 # --------------------------
-df_filtered=df
+df_filtered = df
+
 def parse_duration(duration_str):
     """Convert Discogs duration string (MM:SS or HH:MM:SS) into seconds."""
     if not isinstance(duration_str, str) or not duration_str.strip():
@@ -71,22 +74,20 @@ with col2:
 
 with col3:
     years = pd.to_numeric(df_filtered["year"], errors="coerce")
-    years = years[years > 0]  # ignore 0 or invalid
+    years = years[years > 0]
     if not years.empty:
         st.metric("📅 Year Range", f"{int(years.min())} - {int(years.max())}")
     else:
         st.metric("📅 Year Range", "N/A")
 
-
 with col4:
     if "labels" in df_filtered.columns and not df_filtered["labels"].dropna().empty:
-        # Split multiple labels, clean, and count
         all_labels = (
             df_filtered["labels"]
             .dropna()
             .str.split(", ")
             .explode()
-            .str.replace(r"\s*\(\d+\)$", "", regex=True)  # remove (5), (6) etc.
+            .str.replace(r"\s*\(\d+\)$", "", regex=True)
             .str.strip()
         )
         top_label = all_labels.value_counts().idxmax()
@@ -94,7 +95,6 @@ with col4:
         st.metric("🏆 Favourite Label", f"{top_label} ({top_count})")
     else:
         st.metric("🏆 Favourite Label", "N/A")
-
 
 # --------------------------
 # Records by Year
@@ -122,9 +122,6 @@ else:
     )
     fig_year.update_layout(showlegend=False)
     st.plotly_chart(fig_year, use_container_width=True)
-
-
-
 
 # --------------------------
 # Top Styles
@@ -172,9 +169,9 @@ else:
     fig_styles.update_layout(showlegend=False)
     st.plotly_chart(fig_styles, use_container_width=True)
 
-# ---------------------
-# Pressing Types (Unified Icon Block with Sorted Groups + Legend, Centered, Bigger Icons)
-# ---------------------
+# --------------------------
+# Pressing Types
+# --------------------------
 st.subheader("📀 Original Press VS Reissue/Repress")
 
 pressing_counts = {
@@ -188,10 +185,9 @@ icons = {
     "Repress/Reissue": "🔁",
 }
 
-ICON_SCALE = 5  # 1 icon = 5%
-WRAP = 10      # max icons per line
+ICON_SCALE = 5
+WRAP = 10
 
-# Build icon rows
 all_rows = []
 for press_type, count in pressing_counts.items():
     if total > 0 and count > 0:
@@ -200,31 +196,16 @@ for press_type, count in pressing_counts.items():
         icon_block = "".join([icons[press_type]] * num_icons)
         all_rows.append((press_type, percent, icon_block))
 
-# Sort Originals first, Reissues second
 sorted_rows = sorted(all_rows, key=lambda x: 0 if x[0] == "Original Press" else 1)
 
-# Concatenate and wrap
 icons_string = "".join([row[2] for row in sorted_rows])
-wrapped_rows = [
-    icons_string[i:i+WRAP] for i in range(0, len(icons_string), WRAP)
-]
+wrapped_rows = [icons_string[i:i+WRAP] for i in range(0, len(icons_string), WRAP)]
 
-# Display centered icons (bigger)
 icons_html = "<br>".join(wrapped_rows)
-st.markdown(
-    f"<div style='text-align:center; font-size:32px;'>{icons_html}</div>",
-    unsafe_allow_html=True
-)
+st.markdown(f"<div style='text-align:center; font-size:32px;'>{icons_html}</div>", unsafe_allow_html=True)
 
-# Legend below (smaller, gray, centered)
-legend_html = " ".join(
-    [f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_rows]
-)
-st.markdown(
-    f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>",
-    unsafe_allow_html=True
-)
-
+legend_html = " ".join([f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_rows])
+st.markdown(f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>", unsafe_allow_html=True)
 
 # --------------------------
 # Growth Over Time
@@ -259,16 +240,10 @@ else:
     if missing_added > 0:
         st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
                 f"and are excluded from the growth chart.")
-import re
 
-def clean_name(name):
-    """Remove trailing disambiguation like ' (5)' from Discogs names."""
-    if not isinstance(name, str):
-        return name
-    return re.sub(r"\s*\(\d+\)$", "", name).strip()
-
-import requests
-
+# --------------------------
+# Random Album in Sidebar
+# --------------------------
 DISCOGS_API_BASE = "https://api.discogs.com"
 
 def fetch_release_videos(release_id):
@@ -283,11 +258,7 @@ def fetch_release_videos(release_id):
     except Exception as e:
         st.warning(f"Could not fetch videos for release {release_id}: {e}")
         return []
-# --------------------------
-# Random Album in Sidebar
-# --------------------------
 
-# Ensure we have album covers available
 if "all_covers" not in st.session_state:
     st.session_state.all_covers = df.dropna(subset=["cover_url"])
 
@@ -298,13 +269,11 @@ with col2:
     if st.button("🔄", key="reload_album"):
         st.session_state.random_album = None
 
-# Pick or refresh random album
 if "random_album" not in st.session_state or st.session_state.random_album is None:
     st.session_state.random_album = st.session_state.all_covers.sample(1).iloc[0]
 
 album = st.session_state.random_album
 
-# Clean fields
 def clean_name(value):
     if not value or str(value).lower() == "nan":
         return "Unknown"
@@ -318,36 +287,8 @@ artist = clean_name(album.get("artists", album.get("artist", "Unknown")))
 title = album.get("title", "Unknown")
 label = clean_name(album.get("labels", album.get("label", "Unknown")))
 year = album.get("year", "Unknown")
-
 link = f"https://www.discogs.com/release/{release_id}"
 
-def fetch_price_stats(release_id):
-    url = f"{BASE_URL}/marketplace/stats/{release_id}"
-    try:
-        r = requests.get(url, headers=headers)  # ✅ use global headers
-        r.raise_for_status()
-        data = r.json()
-
-        # Optional: debug the JSON
-        # st.sidebar.json(data)
-
-        return {
-            "lowest": data.get("lowest_price"),
-            "median": data.get("median_price"),
-            "highest": data.get("highest_price"),
-        }
-    except Exception as e:
-        st.sidebar.warning(f"⚠️ Price data unavailable for {release_id}: {e}")
-        return None
-
-# 🔹 Helper for formatting price
-def _fmt_price(value):
-    return f"${value:.2f}" if isinstance(value, (int, float)) else "N/A"
-
-# --- Fetch price stats (only one API call per random album) ---
-prices = fetch_price_stats(release_id)
-
-# Album info block
 st.sidebar.markdown(
     f"""
     <div style="text-align:center;">
@@ -362,26 +303,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# --- Prices block (only if at least one price exists) ---
-if prices and any([prices.get("lowest"), prices.get("median"), prices.get("highest")]):
-    low_s = _fmt_price(prices.get("lowest"))
-    med_s = _fmt_price(prices.get("median"))
-    high_s = _fmt_price(prices.get("highest"))
-
-    st.sidebar.markdown(
-        f"""
-        <div style="text-align:center; margin-top:8px; font-size:90%;">
-            💵 <b>Prices (USD)</b><br>
-            Lowest: <span style="color:#27ae60;">{low_s}</span><br>
-            Median: <span style="color:#2980b9;">{med_s}</span><br>
-            Highest: <span style="color:#e74c3c;">{high_s}</span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# 🎥 Fetch videos
 videos = fetch_release_videos(release_id)
 if videos:
     st.sidebar.markdown("#### 🎥 Videos")
@@ -392,7 +313,6 @@ if videos:
         elif uri:
             st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
 
-# 🔄 Style reload button
 st.markdown(
     """
     <style>
@@ -418,84 +338,3 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
