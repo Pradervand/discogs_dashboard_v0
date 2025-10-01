@@ -286,13 +286,33 @@ if not df_seller_stats.empty:
     st.plotly_chart(fig_sellers, use_container_width=True)
 
 df_prices = df_filtered.dropna(subset=["PricePaid"])
-bins = [0,10,25,50,100,250,1000]
-labels = ["0-10","10-25","25-50","50-100","100-250","250+"]
+bins = [0, 10, 25, 50, 100]
+labels = ["0-10", "10-25", "25-50", "50-100"]
 df_prices["price_bucket"] = pd.cut(df_prices["PricePaid"], bins=bins, labels=labels, include_lowest=True)
+
 bucket_counts = df_prices["price_bucket"].value_counts().sort_index().reset_index()
-bucket_counts.columns=["Bucket","Count"]
-fig = px.bar(bucket_counts, x="Bucket", y="Count", title="Price Cohorts (CHF)")
-st.plotly_chart(fig, use_container_width=True)
+bucket_counts.columns = ["Bucket", "Count"]
+
+if not bucket_counts.empty:
+    # Highlight max bucket in red, others in blue
+    max_bucket = bucket_counts.loc[bucket_counts["Count"].idxmax(), "Bucket"]
+    bucket_counts["Category"] = bucket_counts["Bucket"].apply(
+        lambda b: "Max" if b == max_bucket else "Other"
+    )
+
+    fig = px.bar(
+        bucket_counts,
+        x="Bucket",
+        y="Count",
+        color="Category",
+        title="Price Cohorts (CHF)",
+        color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
+    )
+    fig.update_layout(showlegend=False)
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("No price data available to build cohorts.")
+
 
 # --------------------------
 # Bands by Country (Recap with Flags + Toggle Table)
@@ -545,6 +565,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
