@@ -309,7 +309,7 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
         color="Count",
         hover_name="Country",
         title="Bands by Country in My Collection",
-        color_continuous_scale=px.colors.sequential.Teal,  # softer blue/teal gradient
+        color_continuous_scale=px.colors.sequential.Viridis  # softer blue/teal gradient
     )
 
     fig_country.update_layout(
@@ -487,6 +487,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
