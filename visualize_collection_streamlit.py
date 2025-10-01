@@ -284,6 +284,16 @@ if not df_seller_stats.empty:
     )
     fig_sellers.update_layout(showlegend=False)
     st.plotly_chart(fig_sellers, use_container_width=True)
+
+df_prices = df_filtered.dropna(subset=["PricePaid"])
+bins = [0,10,25,50,100,250,1000]
+labels = ["0-10","10-25","25-50","50-100","100-250","250+"]
+df_prices["price_bucket"] = pd.cut(df_prices["PricePaid"], bins=bins, labels=labels, include_lowest=True)
+bucket_counts = df_prices["price_bucket"].value_counts().sort_index().reset_index()
+bucket_counts.columns=["Bucket","Count"]
+fig = px.bar(bucket_counts, x="Bucket", y="Count", title="Price Cohorts (CHF)")
+st.plotly_chart(fig, use_container_width=True)
+
 # --------------------------
 # Bands by Country (Recap with Flags + Toggle Table)
 # --------------------------
@@ -535,6 +545,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
