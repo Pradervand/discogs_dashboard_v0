@@ -8,7 +8,7 @@ from requests_oauthlib import OAuth1
 # Config
 # -----------------------
 BASE_URL = "https://api.discogs.com"
-USER_AGENT = "Discogs Collection Dashboard"
+USER_AGENT = "Niolu's Discogs test"
 
 # Fill in with your OAuth1 credentials
 CONSUMER_KEY = "NNzITfKaEgvPJUmTvUQJ"
@@ -187,3 +187,4 @@ def fetch_all_releases(username, folder_id=0):
 
     progress.empty()
     return pd.DataFrame(all_records)
+
