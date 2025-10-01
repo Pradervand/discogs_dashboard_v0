@@ -21,28 +21,29 @@ headers = {
     "User-Agent": USER_AGENT,
     "Authorization": f"Discogs token={USER_TOKEN}"
 }
-
-def get_collection_folder_releases(username, folder_id=0, page=1, per_page=100):
-    """
-    Fetch one page of releases in a given collection folder.
-    """
-    url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases"
-    params = {
-        "page": page,
-        "per_page": per_page
-    }
-    resp = requests.get(url, headers=headers, params=params)
+def get_custom_fields(username):
+    """Fetch the list of custom fields for the user."""
+    url = f"{BASE_URL}/users/{username}/collection/fields"
+    resp = requests.get(url, headers=headers)
     resp.raise_for_status()
-    data = resp.json()
-    return data
+    return {f["id"]: f["name"] for f in resp.json().get("fields", [])}
+
+
+def get_instance_fields(username, folder_id, release_id, instance_id):
+    """Fetch field values for a specific instance in the collection."""
+    url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases/{release_id}/instances/{instance_id}"
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    return resp.json().get("fields", [])
+
 
 def fetch_all_releases(username, folder_id=0):
-    """
-    Loop through all pages to fetch all releases, including custom fields.
-    """
     all_records = []
     page = 1
     per_page = 100 
+
+    # First get field definitions
+    field_map = get_custom_fields(username)
 
     while True:
         data = get_collection_folder_releases(username, folder_id, page=page, per_page=per_page)
@@ -52,55 +53,38 @@ def fetch_all_releases(username, folder_id=0):
 
         for item in releases:
             bi = item.get("basic_information", {})
+            instance_id = item.get("instance_id")
+            release_id = bi.get("id")
 
-            # --- Formats and pressing info ---
-            formats = bi.get("formats", [])
-            fmt_desc = []
-            for f in formats:
-                if "descriptions" in f:
-                    fmt_desc.extend(f["descriptions"])
-
-            fmt_desc_lower = [d.lower() for d in fmt_desc]
-
-            is_reissue = any("repress" in d or "reissue" in d for d in fmt_desc_lower)
-            is_limited = any("limited edition" in d for d in fmt_desc_lower)
-            is_original = not is_reissue
-
-            # --- Custom fields (PricePaid, Seller, BandCountry) ---
-            custom_fields = {f["id"]: f.get("value") for f in item.get("fields", []) if "id" in f}
+            # Extra call to get field values
+            field_values = get_instance_fields(username, folder_id, release_id, instance_id)
+            field_dict = {f["field_id"]: f.get("value") for f in field_values}
 
             rec = {
-                "release_id": bi.get("id"),
+                "release_id": release_id,
                 "title": bi.get("title"),
                 "year": bi.get("year"),
                 "artists": ", ".join([artist.get("name") for artist in bi.get("artists", [])]) if bi.get("artists") else None,
                 "labels": ", ".join([lbl.get("name") for lbl in bi.get("labels", [])]) if bi.get("labels") else None,
-                "formats": ", ".join([fmt.get("name") for fmt in formats]) if formats else None,
-                "format_descriptions": ", ".join(fmt_desc) if fmt_desc else None,
+                "formats": ", ".join([fmt.get("name") for fmt in bi.get("formats", [])]) if bi.get("formats") else None,
                 "genres": ", ".join(bi.get("genres", [])) if bi.get("genres") else None,
                 "styles": ", ".join(bi.get("styles", [])) if bi.get("styles") else None,
-                "added": item.get("date_added"),                
+                "added": item.get("date_added"),
                 "rating": item.get("rating"),
-                "cover_url": bi.get("cover_image"),   
-                "thumb_url": bi.get("thumb"),        
-                "is_limited": is_limited,
-                "is_reissue": is_reissue,
-                "is_original": is_original,
-                # Custom fields mapped by ID
-                "PricePaid": custom_fields.get(4),
-                "Seller": custom_fields.get(5),
-                "BandCountry": custom_fields.get(6),
+                # Custom fields by name
+                "PricePaid": field_dict.get(4),
+                "Seller": field_dict.get(5),
+                "BandCountry": field_dict.get(6),
             }
-            
+
             all_records.append(rec)
-       
+
         pagination = data.get("pagination", {})
         if page >= pagination.get("pages", 0):
             break
         page += 1
-        
-        time.sleep(1)  # respect API rate limit
-    
+        time.sleep(1)
+
     return pd.DataFrame(all_records)
 
 
@@ -108,6 +92,7 @@ if __name__ == "__main__":
     df = fetch_all_releases(USERNAME, folder_id=0)  
     print(df.head())
     print(f"Fetched {len(df)} records")
+
 
 
 
