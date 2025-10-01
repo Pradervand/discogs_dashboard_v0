@@ -72,6 +72,7 @@ with col2:
     total_spent = pd.to_numeric(df_filtered["PricePaid"], errors="coerce").sum()
     st.metric("💰 Total Spent (CHF)", f"{total_spent:,.2f}")
 
+
 with col3:
     years = pd.to_numeric(df_filtered["year"], errors="coerce")
     years = years[years > 0]
@@ -208,66 +209,6 @@ legend_html = " ".join([f"{icons[t]} = {t} ({p:.1f}%)" for t, p, _ in sorted_row
 st.markdown(f"<p style='text-align:center; color:gray; font-size:90%;'>{legend_html}</p>", unsafe_allow_html=True)
 
 # --------------------------
-# Growth Over Time
-# --------------------------
-st.subheader("📈 Collection Growth Over Time")
-
-missing_added = df_filtered["added"].isna().sum()
-df_time = df_filtered.dropna(subset=["added"]).set_index("added").sort_index()
-
-if df_time.empty:
-    st.warning("No valid 'date_added' found in your collection.")
-else:
-    monthly_adds = df_time.resample("M").size()
-    cumulative = monthly_adds.cumsum()
-
-    # --- Extra stats ---
-    avg_per_month = monthly_adds.mean()
-    most_active_month = monthly_adds.idxmax()
-    most_active_count = monthly_adds.max()
-
-    # Growth last 12 months vs previous 12
-    if len(monthly_adds) >= 24:
-        last_12 = monthly_adds[-12:].sum()
-        prev_12 = monthly_adds[-24:-12].sum()
-        growth_pct = ((last_12 - prev_12) / prev_12 * 100) if prev_12 > 0 else None
-    else:
-        last_12, prev_12, growth_pct = None, None, None
-
-    # --- Metrics Row ---
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("📊 Avg per Month", f"{avg_per_month:.1f}")
-    with col2:
-        st.metric("🔥 Busiest Month", f"{most_active_count} records", str(most_active_month.strftime("%B %Y")))
-    with col3:
-        if growth_pct is not None:
-            st.metric("📈 Last 12M Growth", f"{last_12} records", f"{growth_pct:+.1f}% vs prev 12M")
-        else:
-            st.metric("📈 Last 12M Growth", "N/A")
-
-    # --- Plot ---
-    df_growth = pd.DataFrame({
-        "Month": monthly_adds.index,
-        "New records": monthly_adds.values,
-        "Cumulative": cumulative.values
-    })
-
-    fig_growth = px.line(
-        df_growth,
-        x="Month",
-        y=["New records", "Cumulative"],
-        title=f"Discogs Collection Growth Over Time "
-              f"(showing {len(df_time)} / {len(df_filtered)} records)",
-        color_discrete_map={"New records": "#3498db", "Cumulative": "#e74c3c"}
-    )
-    st.plotly_chart(fig_growth, use_container_width=True)
-
-    if missing_added > 0:
-        st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
-                f"and are excluded from the growth chart.")
-
-# --------------------------
 # Spending & Sellers Analysis
 # --------------------------
 st.subheader("💸 Spending & Sellers Insights")
@@ -332,11 +273,70 @@ if not df_seller_stats.empty:
         y="Seller",
         orientation="h",
         title="Average Price per Seller (min. 3 records)",
-        labels={"avg_price": "Avg Price (CHF)", "Seller": "Seller"},
-        color="avg_price",
-        color_continuous_scale=["#3498db", "#e74c3c"]
+        labels={"avg_price": "Avg Price (CHF)", "Seller": "Seller"}
     )
     st.plotly_chart(fig_sellers, use_container_width=True)
+
+# --------------------------
+# Growth Over Time
+# --------------------------
+st.subheader("📈 Collection Growth Over Time")
+
+missing_added = df_filtered["added"].isna().sum()
+df_time = df_filtered.dropna(subset=["added"]).set_index("added").sort_index()
+
+if df_time.empty:
+    st.warning("No valid 'date_added' found in your collection.")
+else:
+    monthly_adds = df_time.resample("M").size()
+    cumulative = monthly_adds.cumsum()
+
+    # --- Extra stats ---
+    avg_per_month = monthly_adds.mean()
+    most_active_month = monthly_adds.idxmax()
+    most_active_count = monthly_adds.max()
+
+    # Growth last 12 months vs previous 12
+    if len(monthly_adds) >= 24:
+        last_12 = monthly_adds[-12:].sum()
+        prev_12 = monthly_adds[-24:-12].sum()
+        growth_pct = ((last_12 - prev_12) / prev_12 * 100) if prev_12 > 0 else None
+    else:
+        last_12, prev_12, growth_pct = None, None, None
+
+    # --- Metrics Row ---
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("📊 Avg per Month", f"{avg_per_month:.1f}")
+    with col2:
+        st.metric("🔥 Busiest Month", f"{most_active_count} records", str(most_active_month.strftime("%B %Y")))
+    with col3:
+        if growth_pct is not None:
+            st.metric("📈 Last 12M Growth", f"{last_12} records", f"{growth_pct:+.1f}% vs prev 12M")
+        else:
+            st.metric("📈 Last 12M Growth", "N/A")
+
+    # --- Plot ---
+    df_growth = pd.DataFrame({
+        "Month": monthly_adds.index,
+        "New records": monthly_adds.values,
+        "Cumulative": cumulative.values
+    })
+
+    fig_growth = px.line(
+        df_growth,
+        x="Month",
+        y=["New records", "Cumulative"],
+        title=f"Discogs Collection Growth Over Time "
+              f"(showing {len(df_time)} / {len(df_filtered)} records)",
+        color_discrete_map={"New records": "#3498db", "Cumulative": "#e74c3c"}
+    )
+    st.plotly_chart(fig_growth, use_container_width=True)
+
+    if missing_added > 0:
+        st.info(f"⚠️ {missing_added} records had no parseable 'date_added' "
+                f"and are excluded from the growth chart.")
+
 
 # --------------------------
 # Random Album in Sidebar
@@ -403,3 +403,38 @@ st.sidebar.markdown(
 videos = fetch_release_videos(release_id)
 if videos:
     st.sidebar.markdown("#### 🎥 Videos")
+    for v in videos:
+        uri = v.get("uri")
+        if uri and ("youtube.com" in uri or "youtu.be" in uri):
+            st.sidebar.video(uri)
+        elif uri:
+            st.sidebar.markdown(f"- [{v.get('title')}]({uri})")
+
+st.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        background: none !important;
+        border: none !important;
+        color: #e74c3c !important;
+        font-size: 20px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+    div.stButton > button:first-child:hover {
+        color: #c0392b !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --------------------------
+# Data Preview
+# --------------------------
+with st.expander("🔍 Data Preview (click to expand)"):
+    st.dataframe(df_filtered)
+
+
+
