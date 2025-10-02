@@ -2,33 +2,23 @@ import requests
 import time
 import pandas as pd
 import streamlit as st
-from requests_oauthlib import OAuth1
 
-# -----------------------
-# Config
-# -----------------------
 BASE_URL = "https://api.discogs.com"
-USER_AGENT = "Niolu's Discogs test"
+USER_AGENT = "Discogs Collection Dashboard"
+headers = None  # set later with set_auth()
 
-# Fill in with your OAuth1 credentials
-CONSUMER_KEY = "NNzITfKaEgvPJUmTvUQJ"
-CONSUMER_SECRET = "CQOUAamarejgrqLUmeqGwxXPfvTwDsyW"
-OAUTH_TOKEN = "SkQsCJblkmEYVsMcOjnijXpjRJnIcBsIFvyATgLf"
-OAUTH_TOKEN_SECRET = "BRAkgpOzowAiaEoWQDofRPxLxZUtowdZBUfKqctB"
-USERNAME = "Niolu"
-FOLDER_ID = 0
 
 # -----------------------
-# Auth setup
+# Auth
 # -----------------------
-auth = OAuth1(
-    CONSUMER_KEY,
-    client_secret=CONSUMER_SECRET,
-    resource_owner_key=OAUTH_TOKEN,
-    resource_owner_secret=OAUTH_TOKEN_SECRET
-)
+def set_auth(token: str):
+    """Set global headers for Discogs API auth."""
+    global headers
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Authorization": f"Discogs token={token}"
+    }
 
-headers = {"User-Agent": USER_AGENT}
 
 # -----------------------
 # Safe request wrapper
@@ -36,7 +26,7 @@ headers = {"User-Agent": USER_AGENT}
 def safe_request(url, params=None, progress=None):
     """Perform a GET request with automatic handling of Discogs rate limits (429)."""
     while True:
-        resp = requests.get(url, headers=headers, params=params, auth=auth)
+        resp = requests.get(url, headers=headers, params=params)
 
         if resp.status_code == 429:  # Too Many Requests
             reset_after = int(resp.headers.get("Retry-After", 60))
@@ -49,6 +39,7 @@ def safe_request(url, params=None, progress=None):
 
         resp.raise_for_status()
         return resp.json()
+
 
 # -----------------------
 # API helpers
@@ -74,12 +65,11 @@ def get_instance_fields(username, folder_id, release_id, instance_id, progress=N
         return []
     url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases/{release_id}/instances/{instance_id}"
     try:
-        data = safe_request(url, progress=progress)
-        # ✅ Discogs stores custom field values in "notes", not "fields"
-        return data.get("notes", []) or []
+        return safe_request(url, progress=progress).get("fields", []) or []
     except Exception as e:
         print(f"Warning: failed to fetch instance fields for {release_id}/{instance_id}: {e}")
         return []
+
 
 # -----------------------
 # Main fetcher
@@ -187,4 +177,3 @@ def fetch_all_releases(username, folder_id=0):
 
     progress.empty()
     return pd.DataFrame(all_records)
-
