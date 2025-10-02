@@ -11,10 +11,10 @@ BASE_URL = "https://api.discogs.com"
 USER_AGENT = "Niolu's Discogs test"
 
 # Fill in with your OAuth1 credentials
-CONSUMER_KEY = "NNzITfKaEgvPJUmTvUQJ"
-CONSUMER_SECRET = "CQOUAamarejgrqLUmeqGwxXPfvTwDsyW"
-OAUTH_TOKEN = "SkQsCJblkmEYVsMcOjnijXpjRJnIcBsIFvyATgLf"
-OAUTH_TOKEN_SECRET = "BRAkgpOzowAiaEoWQDofRPxLxZUtowdZBUfKqctB"
+CONSUMER_KEY = st.secrets["discogs"]["CONSUMER_KEY"]
+CONSUMER_SECRET = st.secrets["discogs"]["CONSUMER_SECRET"]
+OAUTH_TOKEN = st.secrets["discogs"]["OAUTH_TOKEN"]
+OAUTH_TOKEN_SECRET = st.secrets["discogs"]["OAUTH_TOKEN_SECRET"]
 USERNAME = "Niolu"
 FOLDER_ID = 0
 
@@ -187,4 +187,5 @@ def fetch_all_releases(username, folder_id=0):
 
     progress.empty()
     return pd.DataFrame(all_records)
+
 
