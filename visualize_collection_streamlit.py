@@ -146,7 +146,7 @@ df_styles = (
     .dropna()
     .explode()
     .value_counts()
-    .head(15)
+    .head(25)   # <-- now Top 25
     .reset_index()
 )
 df_styles.columns = ["Style", "Count"]
@@ -164,49 +164,37 @@ else:
         y="Style",
         orientation="h",
         color="Category",
-        title="Top 15 Styles",
+        title="Top 25 Styles",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
     fig_styles.update_layout(showlegend=False)
-    st.plotly_chart(fig_styles, use_container_width=True)
 
-# --- Style Evolution ---
-st.subheader("🎨 Purchases over time by Style")
+    from streamlit_plotly_events import plotly_events
+    selected = plotly_events(fig_styles, click_event=True, hover_event=False)
 
-# Make sure 'added' is datetime
-df["added"] = pd.to_datetime(df["added"], errors="coerce")
+    # Show time evolution for clicked style
+    if selected:
+        clicked_style = selected[0]["y"]  # y-axis is the style name
+        st.subheader(f"📈 Purchases Over Time — {clicked_style}")
 
-# Collect all styles from the dataframe
-all_styles = []
-for s in df["styles"].dropna():
-    all_styles.extend([x.strip() for x in str(s).split(",")])
+        df_style = df[df["styles"].fillna("").str.contains(clicked_style, case=False, na=False)].copy()
+        df_style["added"] = pd.to_datetime(df_style["added"], errors="coerce")
 
-# Unique + alphabetical sort
-all_styles = sorted(set(all_styles))
+        if not df_style.empty:
+            df_style["month"] = df_style["added"].dt.to_period("M").dt.to_timestamp()
+            style_counts = df_style.groupby("month").size().reset_index(name="Purchases")
 
-# Style selector
-selected_style = st.selectbox("Select a style", all_styles)
+            fig = px.line(
+                style_counts,
+                x="month",
+                y="Purchases",
+                markers=True,
+                title=f"Purchases Over Time — {clicked_style}"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No purchases found for this style.")
 
-if selected_style:
-    # Filter rows that contain the selected style
-    df_style = df[df["styles"].fillna("").str.contains(selected_style, case=False, na=False)].copy()
-
-    if not df_style.empty:
-        # Group purchases by month
-        df_style["month"] = df_style["added"].dt.to_period("M").dt.to_timestamp()
-        style_counts = df_style.groupby("month").size().reset_index(name="Purchases")
-
-        import plotly.express as px
-        fig = px.line(
-            style_counts,
-            x="month",
-            y="Purchases",
-            markers=True,
-            title=f"Purchases Over Time — {selected_style}"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No purchases found for this style.")
 
 
 # --------------------------
