@@ -21,7 +21,7 @@ headers = {
 }
 
 st.set_page_config(page_title="Discogs Collection Dashboard", layout="wide")
-st.title("📀 My Discogs Collection Dashboard")
+st.title("📀 Niolu's Vinyls Collection Dashboard")
 
 # --------------------------
 # Cached fetch
@@ -629,6 +629,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
