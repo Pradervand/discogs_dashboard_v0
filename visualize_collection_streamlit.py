@@ -126,7 +126,7 @@ else:
     fig_year.update_layout(showlegend=False)
     st.plotly_chart(fig_year, use_container_width=True)
 
-# --------------------------
+## --------------------------
 # Top Styles
 # --------------------------
 st.subheader("🎼 Top Styles")
@@ -148,7 +148,7 @@ df_styles = (
     .dropna()
     .explode()
     .value_counts()
-    .head(25)   # <-- now Top 25
+    .head(25)   # Top 25 styles
     .reset_index()
 )
 df_styles.columns = ["Style", "Count"]
@@ -160,6 +160,10 @@ else:
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
     df_styles["Category"] = df_styles["Style"].apply(lambda s: "Max" if s == max_style else "Other")
 
+    import plotly.express as px
+    from streamlit_plotly_events import plotly_events
+
+    # Bar chart with dark theme + red/blue colors
     fig_styles = px.bar(
         df_styles,
         x="Count",
@@ -169,14 +173,20 @@ else:
         title="Top 25 Styles",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
-    fig_styles.update_layout(showlegend=False)
+    fig_styles.update_layout(
+        showlegend=False,
+        plot_bgcolor="rgba(0,0,0,0)",   # transparent background
+        paper_bgcolor="rgba(0,0,0,0)",  # transparent plot paper
+        font=dict(color="white"),
+        title_font=dict(color="white")
+    )
 
-    from streamlit_plotly_events import plotly_events
     selected = plotly_events(fig_styles, click_event=True, hover_event=False)
+    st.plotly_chart(fig_styles, use_container_width=True)
 
     # Show time evolution for clicked style
     if selected:
-        clicked_style = selected[0]["y"]  # y-axis is the style name
+        clicked_style = selected[0]["y"]  # y-axis holds style name
         st.subheader(f"📈 Purchases Over Time — {clicked_style}")
 
         df_style = df[df["styles"].fillna("").str.contains(clicked_style, case=False, na=False)].copy()
@@ -193,11 +203,17 @@ else:
                 markers=True,
                 title=f"Purchases Over Time — {clicked_style}"
             )
+            # Blue line with red markers, dark theme
+            fig.update_traces(line=dict(color="#3498db"), marker=dict(color="#e74c3c"))
+            fig.update_layout(
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white"),
+                title_font=dict(color="white")
+            )
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No purchases found for this style.")
-
-
 
 # --------------------------
 # Pressing Types
@@ -612,6 +628,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
