@@ -6,6 +6,8 @@ import random
 from collection_dump import fetch_all_releases
 import requests
 import re
+from streamlit_plotly_events import plotly_events
+
 
 USER_TOKEN = st.secrets["DISCOGS_TOKEN"]
 USERNAME = st.secrets["DISCOGS_USERNAME"]
@@ -610,6 +612,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
