@@ -170,6 +170,45 @@ else:
     fig_styles.update_layout(showlegend=False)
     st.plotly_chart(fig_styles, use_container_width=True)
 
+# --- Style Evolution ---
+st.subheader("🎨 Purchases over time by Style")
+
+# Make sure 'added' is datetime
+df["added"] = pd.to_datetime(df["added"], errors="coerce")
+
+# Collect all styles from the dataframe
+all_styles = []
+for s in df["styles"].dropna():
+    all_styles.extend([x.strip() for x in str(s).split(",")])
+
+# Unique + alphabetical sort
+all_styles = sorted(set(all_styles))
+
+# Style selector
+selected_style = st.selectbox("Select a style", all_styles)
+
+if selected_style:
+    # Filter rows that contain the selected style
+    df_style = df[df["styles"].fillna("").str.contains(selected_style, case=False, na=False)].copy()
+
+    if not df_style.empty:
+        # Group purchases by month
+        df_style["month"] = df_style["added"].dt.to_period("M").dt.to_timestamp()
+        style_counts = df_style.groupby("month").size().reset_index(name="Purchases")
+
+        import plotly.express as px
+        fig = px.line(
+            style_counts,
+            x="month",
+            y="Purchases",
+            markers=True,
+            title=f"Purchases Over Time — {selected_style}"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No purchases found for this style.")
+
+
 # --------------------------
 # Pressing Types
 # --------------------------
@@ -583,6 +622,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
