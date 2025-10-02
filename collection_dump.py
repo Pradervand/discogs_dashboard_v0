@@ -221,46 +221,39 @@ def fetch_latest_releases(username, folder_id=0, per_page=5, page=1):
 def incremental_update(username, folder_id=0, per_page=5, max_pages=50):
     """Fetch only newest records and append to cache."""
     df_cache = load_cache()
-    known_instances = set(df_cache['instance_id']) if not df_cache.empty else set()
+
+    # Fallback: if cache is empty or missing instance_id, rebuild
+    if df_cache.empty or "instance_id" not in df_cache.columns:
+        known_instances = set()
+    else:
+        known_instances = set(df_cache["instance_id"].dropna().astype(str))
+
     import pandas as pd, time
     new_records = []
     page = 1
+
     while page <= max_pages:
-        data = fetch_latest_releases(username, folder_id, per_page, page)
-        releases = data.get("releases", [])
-        if not releases:
+        url = f"https://api.discogs.com/users/{username}/collection/folders/{folder_id}/releases"
+        params = {"page": page, "per_page": per_page}
+        data = make_request(url, params)
+
+        for item in data.get("releases", []):
+            instance_id = str(item.get("id"))  # collection entry id
+            if instance_id not in known_instances:
+                release_id = item["basic_information"]["id"]
+                release_data = fetch_release(release_id)  # includes your custom fields
+                release_data["instance_id"] = instance_id
+                new_records.append(release_data)
+
+        if "pagination" not in data or page >= data["pagination"]["pages"]:
             break
-        for item in releases:
-            inst = item.get("instance_id")
-            if inst in known_instances:
-                if new_records:
-                    df_new = pd.DataFrame(new_records)
-                    df_cache = pd.concat([df_new, df_cache], ignore_index=True)
-                    save_cache(df_cache)
-                    return df_cache, new_records
-                return df_cache, []
-            bi = item.get("basic_information", {})
-            notes = get_instance_fields(username, folder_id, bi.get("id"), inst)
-            field_dict = {n["field_id"]: n.get("value") for n in notes}
-            rec = {
-                "release_id": bi.get("id"),
-                "instance_id": inst,
-                "title": bi.get("title"),
-                "year": bi.get("year"),
-                "artists": ", ".join([a["name"] for a in bi.get("artists", [])]),
-                "labels": ", ".join([l["name"] for l in bi.get("labels", [])]),
-                "cover_url": bi.get("cover_image"),
-                "added": item.get("date_added"),
-                "PricePaid": field_dict.get(4),
-                "Seller": field_dict.get(5),
-                "BandCountry": field_dict.get(6),
-            }
-            new_records.append(rec)
         page += 1
-        time.sleep(0.2)
+        time.sleep(1)
+
     if new_records:
         df_new = pd.DataFrame(new_records)
-        df_cache = pd.concat([df_new, df_cache], ignore_index=True)
-        save_cache(df_cache)
-        return df_cache, new_records
-    return df_cache, []
+        df_final = pd.concat([df_cache, df_new], ignore_index=True)
+        save_cache(df_final)
+        return df_final, new_records
+    else:
+        return df_cache, []
