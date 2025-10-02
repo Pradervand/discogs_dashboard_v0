@@ -175,7 +175,7 @@ else:
 
 
 # --- Style Evolution ---
-st.subheader("🎨 Purchases over time by Style")
+st.subheader("🎨 Cumulative Purchases over time by Style")
 
 # Make sure 'added' is datetime
 df["added"] = pd.to_datetime(df["added"], errors="coerce")
@@ -201,20 +201,23 @@ if selected_style:
     if not df_style.empty:
         # Group purchases by month
         df_style["month"] = df_style["added"].dt.to_period("M").dt.to_timestamp()
-        style_counts = df_style.groupby("month").size().reset_index(name="Purchases")
+        style_counts = (
+            df_style.groupby("month").size().reset_index(name="Purchases")
+        )
+        # Convert to cumulative
+        style_counts["Cumulative"] = style_counts["Purchases"].cumsum()
 
         import plotly.express as px
         fig = px.line(
             style_counts,
             x="month",
-            y="Purchases",
+            y="Cumulative",
             markers=True,
-            title=f"Purchases Over Time — {selected_style}"
+            title=f"Cumulative Purchases Over Time — {selected_style}"
         )
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No purchases found for this style.")
-
 
 # --------------------------
 # Pressing Types
@@ -629,6 +632,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
