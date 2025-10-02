@@ -5,3 +5,4 @@ requests
 requests-oauthlib
 pyarrow     # or fastparquet, required for parquet caching
 country_converter  # optional, only if you use country-to-flag conversion
+streamlit-plotly-events
