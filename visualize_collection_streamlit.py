@@ -3,7 +3,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import random
-from collection_dump import fetch_all_releases
+from collection_dump import fetch_all_releases, USERNAME, FOLDER_ID
+from collection_update import load_cache, save_cache, incremental_update
 import requests
 import re
 
@@ -26,10 +27,47 @@ st.title("📀 My Discogs Collection Dashboard")
 # --------------------------
 @st.cache_data(show_spinner="Fetching data from Discogs API...")
 def load_collection(username):
-    return fetch_all_releases(username)
+    df = load_cache()
+    if df.empty:
+        df = fetch_all_releases(username)
+        save_cache(df)
+    return df
 
 # Load once (cached)
 df = load_collection(USERNAME).copy()
+
+import time
+from datetime import datetime
+
+if "last_check" not in st.session_state:
+    st.session_state["last_check"] = 0
+if "last_update" not in st.session_state:
+    st.session_state["last_update"] = None
+
+# --- Auto check once per hour ---
+if time.time() - st.session_state["last_check"] > 3600:
+    df_new, new_records = incremental_update(USERNAME, FOLDER_ID)
+    st.session_state["last_check"] = time.time()
+    if new_records:
+        df = df_new.copy()
+        st.session_state["last_update"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.info(f"🔄 Auto-update: {len(new_records)} new record(s) added.")
+
+# --- Manual button ---
+if st.button("🔄 Check for new records now"):
+    df_new, new_records = incremental_update(USERNAME, FOLDER_ID)
+    st.session_state["last_check"] = time.time()
+    if new_records:
+        df = df_new.copy()
+        st.session_state["last_update"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.success(f"Added {len(new_records)} new record(s) ✅")
+    else:
+        st.info("No new records found — collection is up to date.")
+
+# --- Last updated timestamp ---
+if st.session_state.get("last_update"):
+    st.caption(f"📅 Last updated: {st.session_state['last_update']}")
+
 
 # Parse dates safely
 df["added"] = pd.to_datetime(
