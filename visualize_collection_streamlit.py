@@ -131,26 +131,6 @@ else:
 # --------------------------
 st.subheader("🎼 Top Styles")
 
-def clean_styles(row):
-    if pd.isna(row):
-        return None
-    styles = [s.strip() for s in row.split(",")]
-    if "Black Metal" in styles:
-        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
-        if more_specific:
-            styles = [s for s in styles if s != "Black Metal"]
-    return styles
-
-df_styles = (
-    df_filtered["styles"]
-    .dropna()
-    .apply(clean_styles)
-    .dropna()
-    .explode()
-    .value_counts()
-    .head(25)   # Top 25 styles
-    .reset_index()
-)
 df_styles.columns = ["Style", "Count"]
 
 if df_styles.empty:
@@ -183,37 +163,6 @@ else:
 
     selected = plotly_events(fig_styles, click_event=True, hover_event=False)
     st.plotly_chart(fig_styles, use_container_width=True)
-
-    # Show time evolution for clicked style
-    if selected:
-        clicked_style = selected[0]["y"]  # y-axis holds style name
-        st.subheader(f"📈 Purchases Over Time — {clicked_style}")
-
-        df_style = df[df["styles"].fillna("").str.contains(clicked_style, case=False, na=False)].copy()
-        df_style["added"] = pd.to_datetime(df_style["added"], errors="coerce")
-
-        if not df_style.empty:
-            df_style["month"] = df_style["added"].dt.to_period("M").dt.to_timestamp()
-            style_counts = df_style.groupby("month").size().reset_index(name="Purchases")
-
-            fig = px.line(
-                style_counts,
-                x="month",
-                y="Purchases",
-                markers=True,
-                title=f"Purchases Over Time — {clicked_style}"
-            )
-            # Blue line with red markers, dark theme
-            fig.update_traces(line=dict(color="#3498db"), marker=dict(color="#e74c3c"))
-            fig.update_layout(
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="white"),
-                title_font=dict(color="white")
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No purchases found for this style.")
 
 # --------------------------
 # Pressing Types
@@ -628,6 +577,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
