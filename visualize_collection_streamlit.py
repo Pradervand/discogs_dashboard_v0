@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import random
-from collection_dump import fetch_all_releases, load_cache, incremental_update, save_cache
+from collection_dump import fetch_all_releases
 import requests
 import re
 
@@ -26,47 +26,10 @@ st.title("📀 My Discogs Collection Dashboard")
 # --------------------------
 @st.cache_data(show_spinner="Fetching data from Discogs API...")
 def load_collection(username):
-    df = load_cache()
-    if df is None or df.empty:
-        df = fetch_all_releases(username)
-        try:
-            save_cache(df)
-        except Exception:
-            pass
-    return df
+    return fetch_all_releases(username)
 
 # Load once (cached)
 df = load_collection(USERNAME).copy()
-# --- Auto-check / Manual check for new records ---
-import time
-from datetime import datetime
-
-if "last_check" not in st.session_state:
-    st.session_state["last_check"] = 0
-if "last_update" not in st.session_state:
-    st.session_state["last_update"] = None
-
-if time.time() - st.session_state["last_check"] > 3600:
-    df_new, new_records = incremental_update(USERNAME, 0)
-    st.session_state["last_check"] = time.time()
-    if new_records:
-        df = df_new.copy()
-        st.session_state["last_update"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.info(f"🔄 Auto-update: added {len(new_records)} new record(s).")
-
-if st.button("🔄 Check for new records now"):
-    df_new, new_records = incremental_update(USERNAME, 0)
-    st.session_state["last_check"] = time.time()
-    if new_records:
-        df = df_new.copy()
-        st.session_state["last_update"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.success(f"Added {len(new_records)} new record(s) ✅")
-    else:
-        st.info("No new records found — collection is up to date.")
-
-if st.session_state.get("last_update"):
-    st.caption(f"📅 Last updated: {st.session_state['last_update']}")
-
 
 # Parse dates safely
 df["added"] = pd.to_datetime(
