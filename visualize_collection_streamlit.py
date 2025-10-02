@@ -129,8 +129,29 @@ else:
 ## --------------------------
 # Top Styles
 # --------------------------
+
 st.subheader("🎼 Top Styles")
 
+def clean_styles(row):
+    if pd.isna(row):
+        return None
+    styles = [s.strip() for s in row.split(",")]
+    if "Black Metal" in styles:
+        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
+        if more_specific:
+            styles = [s for s in styles if s != "Black Metal"]
+    return styles
+
+df_styles = (
+    df_filtered["styles"]
+    .dropna()
+    .apply(clean_styles)
+    .dropna()
+    .explode()
+    .value_counts()
+    .head(15)
+    .reset_index()
+)
 df_styles.columns = ["Style", "Count"]
 
 if df_styles.empty:
@@ -140,29 +161,60 @@ else:
     max_style = df_styles.loc[df_styles["Count"].idxmax(), "Style"]
     df_styles["Category"] = df_styles["Style"].apply(lambda s: "Max" if s == max_style else "Other")
 
-    import plotly.express as px
-    from streamlit_plotly_events import plotly_events
-
-    # Bar chart with dark theme + red/blue colors
     fig_styles = px.bar(
         df_styles,
         x="Count",
         y="Style",
         orientation="h",
         color="Category",
-        title="Top 25 Styles",
+        title="Top 15 Styles",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
-    fig_styles.update_layout(
-        showlegend=False,
-        plot_bgcolor="rgba(0,0,0,0)",   # transparent background
-        paper_bgcolor="rgba(0,0,0,0)",  # transparent plot paper
-        font=dict(color="white"),
-        title_font=dict(color="white")
-    )
-
-    selected = plotly_events(fig_styles, click_event=True, hover_event=False)
+    fig_styles.update_layout(showlegend=False)
     st.plotly_chart(fig_styles, use_container_width=True)
+
+
+# --- Style Evolution ---
+st.subheader("🎨 Purchases over time by Style")
+
+# Make sure 'added' is datetime
+df["added"] = pd.to_datetime(df["added"], errors="coerce")
+
+# Collect all styles from the dataframe
+all_styles = []
+for s in df["styles"].dropna():
+    all_styles.extend([x.strip() for x in str(s).split(",")])
+
+# Count occurrences
+style_counts = pd.Series(all_styles).value_counts()
+
+# Keep only styles with at least 5 items
+filtered_styles = sorted(style_counts[style_counts >= 5].index.tolist())
+
+# Style selector
+selected_style = st.selectbox("Select a style", filtered_styles)
+
+if selected_style:
+    # Filter rows that contain the selected style
+    df_style = df[df["styles"].fillna("").str.contains(selected_style, case=False, na=False)].copy()
+
+    if not df_style.empty:
+        # Group purchases by month
+        df_style["month"] = df_style["added"].dt.to_period("M").dt.to_timestamp()
+        style_counts = df_style.groupby("month").size().reset_index(name="Purchases")
+
+        import plotly.express as px
+        fig = px.line(
+            style_counts,
+            x="month",
+            y="Purchases",
+            markers=True,
+            title=f"Purchases Over Time — {selected_style}"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No purchases found for this style.")
+
 
 # --------------------------
 # Pressing Types
@@ -577,6 +629,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
