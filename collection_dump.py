@@ -105,6 +105,7 @@ def fetch_all_releases(username, folder_id=0):
     price_id = field_name_to_id.get("PricePaid") or 4
     seller_id = field_name_to_id.get("Seller") or 5
     bandcountry_id = field_name_to_id.get("BandCountry") or 6
+    truestyles_id = field_name_to_id.get("ActualGenre") or 7
 
     instance_cache = {}
 
@@ -150,6 +151,7 @@ def fetch_all_releases(username, folder_id=0):
                 price_paid_val = field_dict.get(price_id)
                 seller_val = field_dict.get(seller_id)
                 bandcountry_val = field_dict.get(bandcountry_id)
+                truestyles_val = field_dict.get(truestyles_id)
 
             rec = {
                 "release_id": bi.get("id"),
@@ -171,6 +173,7 @@ def fetch_all_releases(username, folder_id=0):
                 "PricePaid": price_paid_val,
                 "Seller": seller_val,
                 "BandCountry": bandcountry_val,
+                "TrueStyles": truestyles_val
             }
 
             all_records.append(rec)
@@ -187,5 +190,6 @@ def fetch_all_releases(username, folder_id=0):
 
     progress.empty()
     return pd.DataFrame(all_records)
+
 
 
