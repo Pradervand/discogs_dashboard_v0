@@ -141,7 +141,7 @@ def clean_truestyles(row):
     styles = []
     for p in parts:
         styles.extend([s.strip() for s in p.split(",") if s.strip()])
-
+    return styles if styles else None
 
 df_styles = (
     df_filtered["TrueStyles"]
@@ -149,7 +149,7 @@ df_styles = (
     .apply(clean_truestyles)
     .dropna()
     .explode()   # expands multiple styles per record
-    .value_counts()    
+    .value_counts()
     .reset_index()
 )
 df_styles.columns = ["Style", "Count"]
@@ -192,7 +192,7 @@ for s in df["TrueStyles"].dropna():
 style_counts = pd.Series(all_styles).value_counts()
 
 # Keep only styles with at least 5 items
-filtered_styles = sorted(style_counts[style_counts >= 1].index.tolist())
+filtered_styles = sorted(style_counts[style_counts >= 5].index.tolist())
 
 # TrueStyle selector
 selected_style = st.selectbox("Select a TrueStyle", filtered_styles)
@@ -221,6 +221,7 @@ if selected_style:
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No purchases found for this TrueStyle.")
+
 
 
 # --------------------------
@@ -636,6 +637,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
