@@ -174,7 +174,10 @@ else:
         title="Top TrueStyles (min 2 records)",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
-    fig_styles.update_layout(showlegend=False)
+    fig_styles.update_layout(
+    showlegend=False,
+    height=30 * len(df_styles)   # 30px per bar row
+    )
     st.plotly_chart(fig_styles, use_container_width=True)
 
 
@@ -641,6 +644,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
