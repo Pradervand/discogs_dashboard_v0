@@ -141,12 +141,7 @@ def clean_truestyles(row):
     styles = []
     for p in parts:
         styles.extend([s.strip() for s in p.split(",") if s.strip()])
-    # Handle Black Metal refinement
-    if "Black Metal" in styles:
-        more_specific = [s for s in styles if s != "Black Metal" and s.endswith("Black Metal")]
-        if more_specific:
-            styles = [s for s in styles if s != "Black Metal"]
-    return styles if styles else None
+
 
 df_styles = (
     df_filtered["TrueStyles"]
@@ -154,8 +149,7 @@ df_styles = (
     .apply(clean_truestyles)
     .dropna()
     .explode()   # expands multiple styles per record
-    .value_counts()
-    .head(15)
+    .value_counts()    
     .reset_index()
 )
 df_styles.columns = ["Style", "Count"]
@@ -174,7 +168,7 @@ else:
         y="Style",
         orientation="h",
         color="Category",
-        title="Top 15 TrueStyles",
+        title="Top TrueStyles",
         color_discrete_map={"Max": "#e74c3c", "Other": "#3498db"}
     )
     fig_styles.update_layout(showlegend=False)
@@ -198,7 +192,7 @@ for s in df["TrueStyles"].dropna():
 style_counts = pd.Series(all_styles).value_counts()
 
 # Keep only styles with at least 5 items
-filtered_styles = sorted(style_counts[style_counts >= 5].index.tolist())
+filtered_styles = sorted(style_counts[style_counts >= 1].index.tolist())
 
 # TrueStyle selector
 selected_style = st.selectbox("Select a TrueStyle", filtered_styles)
@@ -642,6 +636,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
