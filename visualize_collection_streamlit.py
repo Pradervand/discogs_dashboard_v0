@@ -39,18 +39,13 @@ def load_collection(username):
         df.to_parquet(CACHE_FILE)
         return df
 
-st.subheader("🔄 Collection Control")
 
-# Button 1: Full refresh
-if st.button("🔄 Update Collection from API (Full Reload)"):
-    with st.spinner("Fetching entire collection from Discogs..."):
-        df = fetch_all_releases(USERNAME)
-        df.to_parquet(CACHE_FILE)
-        st.cache_data.clear()
-        st.success("✅ Full collection updated and cached!")
+# --------------------------
+# Sidebar Control (Add New Only)
+# --------------------------
+st.sidebar.subheader("➕ Collection Update")
 
-# Button 2: Add only new items
-if st.button("➕ Add Only New Items"):
+if st.sidebar.button("➕ Add Only New Items"):
     with st.spinner("Checking for new items..."):
         import requests
         from requests_oauthlib import OAuth1
@@ -63,7 +58,6 @@ if st.button("➕ Add Only New Items"):
         )
         headers = {"User-Agent": "Niolu Discogs test"}
 
-        # 1 API call just to get total collection size
         url = f"https://api.discogs.com/users/{USERNAME}/collection/folders/{FOLDER_ID}/releases"
         params = {"page": 1, "per_page": 1}
         resp = requests.get(url, headers=headers, auth=auth).json()
@@ -78,24 +72,13 @@ if st.button("➕ Add Only New Items"):
 
         if total_items > cached_count:
             st.info(f"Found {total_items - cached_count} new items. Fetching now...")
-            # Fetch all releases again (could optimize to fetch only new pages, but safer to reload tail)
             new_df = fetch_all_releases(USERNAME)
-            # Append only new rows
             merged_df = pd.concat([cached_df, new_df.iloc[cached_count:]], ignore_index=True)
             merged_df.to_parquet(CACHE_FILE)
             st.cache_data.clear()
             st.success(f"✅ Added {total_items - cached_count} new items to cache!")
         else:
             st.success("✅ No new items found.")
-
-# Button 3: Clear cache
-if st.button("🗑️ Clear Cache"):
-    if os.path.exists(CACHE_FILE):
-        os.remove(CACHE_FILE)
-    st.cache_data.clear()
-    st.warning("⚠️ Cache cleared. Next load will fetch everything again from API.")
-
-# Always load cached (or updated) dataset
 df = load_collection(USERNAME).copy()
 
 
@@ -733,3 +716,25 @@ with st.expander("🔍 Data Preview (click to expand)"):
 
 
 
+
+
+# --------------------------
+# Main Page Cache Control
+# --------------------------
+st.markdown("---")
+st.subheader("🛠 Cache Management")
+
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🔄 Update Collection from API (Full Reload)"):
+        with st.spinner("Fetching entire collection from Discogs..."):
+            df = fetch_all_releases(USERNAME)
+            df.to_parquet(CACHE_FILE)
+            st.cache_data.clear()
+            st.success("✅ Full collection updated and cached!")
+with col2:
+    if st.button("🗑️ Clear Cache"):
+        if os.path.exists(CACHE_FILE):
+            os.remove(CACHE_FILE)
+        st.cache_data.clear()
+        st.warning("⚠️ Cache cleared. Next load will fetch everything again from API.")
