@@ -26,61 +26,20 @@ st.title("📀 Niolu's Vinyls Collection Dashboard")
 # --------------------------
 # Cached fetch
 # --------------------------
-
-import os
-CACHE_FILE = "collection_cache.parquet"
-
-@st.cache_data
+@st.cache_data(show_spinner="Fetching data from Discogs API...")
 def load_collection(username):
-    if os.path.exists(CACHE_FILE):
-        return pd.read_parquet(CACHE_FILE)
-    else:
-        df = fetch_all_releases(username)
-        df.to_parquet(CACHE_FILE)
-        return df
+    return fetch_all_releases(username)
 
-
-# --------------------------
-# Sidebar Control (Add New Only)
-# --------------------------
-st.sidebar.subheader("➕ Collection Update")
-
-if st.sidebar.button("➕ Add Only New Items"):
-    with st.spinner("Checking for new items..."):
-        import requests
-        from requests_oauthlib import OAuth1
-
-        auth = OAuth1(
-            st.secrets["discogs"]["CONSUMER_KEY"],
-            client_secret=st.secrets["discogs"]["CONSUMER_SECRET"],
-            resource_owner_key=st.secrets["discogs"]["OAUTH_TOKEN"],
-            resource_owner_secret=st.secrets["discogs"]["OAUTH_TOKEN_SECRET"]
-        )
-        headers = {"User-Agent": "Niolu Discogs test"}
-
-        url = f"https://api.discogs.com/users/{USERNAME}/collection/folders/{FOLDER_ID}/releases"
-        params = {"page": 1, "per_page": 1}
-        resp = requests.get(url, headers=headers, auth=auth).json()
-        total_items = resp["pagination"]["items"]
-
-        if os.path.exists(CACHE_FILE):
-            cached_df = pd.read_parquet(CACHE_FILE)
-            cached_count = len(cached_df)
-        else:
-            cached_df = pd.DataFrame()
-            cached_count = 0
-
-        if total_items > cached_count:
-            st.info(f"Found {total_items - cached_count} new items. Fetching now...")
-            new_df = fetch_all_releases(USERNAME)
-            merged_df = pd.concat([cached_df, new_df.iloc[cached_count:]], ignore_index=True)
-            merged_df.to_parquet(CACHE_FILE)
-            st.cache_data.clear()
-            st.success(f"✅ Added {total_items - cached_count} new items to cache!")
-        else:
-            st.success("✅ No new items found.")
+# Load once (cached)
 df = load_collection(USERNAME).copy()
 
+# Parse dates safely
+df["added"] = pd.to_datetime(
+    df["added"],
+    errors="coerce",
+    utc=True,
+    infer_datetime_format=True
+)
 
 # --------------------------
 # Sidebar filters
@@ -716,25 +675,3 @@ with st.expander("🔍 Data Preview (click to expand)"):
 
 
 
-
-
-# --------------------------
-# Main Page Cache Control
-# --------------------------
-st.markdown("---")
-st.subheader("🛠 Cache Management")
-
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("🔄 Update Collection from API (Full Reload)"):
-        with st.spinner("Fetching entire collection from Discogs..."):
-            df = fetch_all_releases(USERNAME)
-            df.to_parquet(CACHE_FILE)
-            st.cache_data.clear()
-            st.success("✅ Full collection updated and cached!")
-with col2:
-    if st.button("🗑️ Clear Cache"):
-        if os.path.exists(CACHE_FILE):
-            os.remove(CACHE_FILE)
-        st.cache_data.clear()
-        st.warning("⚠️ Cache cleared. Next load will fetch everything again from API.")
