@@ -26,6 +26,9 @@ st.title("📀 Niolu's Vinyls Collection Dashboard")
 # --------------------------
 # Cached fetch
 # --------------------------
+
+import os
+
 CACHE_FILE = "collection_cache.parquet"
 
 @st.cache_data
@@ -37,17 +40,22 @@ def load_collection(username):
         df.to_parquet(CACHE_FILE)
         return df
 
-# 🔄 Update button on main page
-st.subheader("🔄 Collection Control")
-if st.button("Update Collection from API"):
+st.sidebar.subheader("🔄 Collection Control")
+if st.sidebar.button("Update Collection from API"):
     with st.spinner("Fetching latest collection from Discogs..."):
         df = fetch_all_releases(USERNAME)
         df.to_parquet(CACHE_FILE)
         st.cache_data.clear()
         st.success("✅ Collection updated and cached!")
 
-# Always load cached (or updated) dataset
 df = load_collection(USERNAME).copy()
+# Parse dates safely
+df["added"] = pd.to_datetime(
+    df["added"],
+    errors="coerce",
+    utc=True,
+    infer_datetime_format=True
+)
 
 # --------------------------
 # Sidebar filters
@@ -652,7 +660,6 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
-
 
 
 
