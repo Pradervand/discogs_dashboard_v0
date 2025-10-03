@@ -152,7 +152,7 @@ df_styles = (
     .value_counts()
     .reset_index()
 )
-df_styles.columns = ["Style", "Count"]
+df_styles = df_styles[df_styles["Count"] >= 2]
 
 if df_styles.empty:
     st.warning("No valid TrueStyles found in your collection.")
@@ -637,6 +637,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
