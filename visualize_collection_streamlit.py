@@ -176,7 +176,7 @@ else:
     )
     fig_styles.update_layout(
     showlegend=False,
-    height=15 * len(df_styles)   # 30px per bar row
+    height=19 * len(df_styles)   # 30px per bar row
     )
     st.plotly_chart(fig_styles, use_container_width=True)
 
@@ -644,6 +644,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
