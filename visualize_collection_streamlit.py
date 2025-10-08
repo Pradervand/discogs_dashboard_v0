@@ -459,66 +459,29 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     )
     country_counts.columns = ["Country", "Count"]
 
-# --- Top 5 countries with flags ---
-st.markdown("### 🏳️ Top 5 Countries")
+    # --- Top 5 countries with flags ---
+    st.markdown("### 🏳️ Top 5 Countries")
 
-top5 = country_counts.head(5)
-cols = st.columns(len(top5))
+    top5 = country_counts.head(5)
+    cols = st.columns(len(top5))
 
-if "expanded_countries" not in st.session_state:
-    st.session_state.expanded_countries = {}
+    for i, row in top5.iterrows():
+        iso2 = iso3_to_iso2(row["Country"])
+        count = row["Count"]
 
-for idx, row in top5.iterrows():
-    iso2 = iso3_to_iso2(row["Country"])
-    count = row["Count"]
-    country = row["Country"]
+        with cols[list(top5.index).index(i)]:
+            if iso2:
+                flag_url = f"https://flagcdn.com/48x36/{iso2.lower()}.png"
+                st.image(flag_url, width=48)
+            st.metric(row["Country"], f"{count} bands")
 
-    with cols[idx]:
-        flag_url = f"https://flagcdn.com/48x36/{iso2.lower()}.png" if iso2 else None
+    # --- Toggle full recap table ---
+    if st.checkbox("Show full country table", value=False):
+        st.markdown("### 📋 All Countries")
+        st.dataframe(country_counts, use_container_width=True)
 
-        # Render a clickable HTML block (flag + country + count)
-        html = f"""
-        <div style='text-align:center;'>
-            <form action="" method="post">
-                <button name="clicked_country" value="{country}" style="
-                    background:none;
-                    border:none;
-                    cursor:pointer;
-                    text-align:center;
-                    color:inherit;
-                    width:100%;
-                ">
-                    {'<img src="' + flag_url + '" width="48" style="margin-bottom:6px;"/>' if flag_url else ''}
-                    <div style="font-weight:bold;">{country}</div>
-                    <div style="font-size:22px;">{count} bands</div>
-                </button>
-            </form>
-        </div>
-        """
-        st.markdown(html, unsafe_allow_html=True)
-
-        # Create a matching invisible Streamlit button to handle the click event
-        if st.button(f"toggle_{country}", key=f"toggle_{country}"):
-            st.session_state.expanded_countries[country] = not st.session_state.expanded_countries.get(country, False)
-
-        # Show bands if toggled on
-        if st.session_state.expanded_countries.get(country, False):
-            bands = (
-                df_filtered[df_filtered["BandCountry"].str.upper() == country.upper()]
-                .dropna(subset=["artists"])
-            )
-            if not bands.empty:
-                bands_list = sorted(set(bands["artists"].astype(str)))
-                with st.expander(f"Bands from {country} ({len(bands_list)})", expanded=True):
-                    st.write(", ".join(bands_list))
-            else:
-                st.info(f"No bands found for {country}.", icon="ℹ️")
-
-# --- Full table toggle ---
-if st.checkbox("Show full country table", value=False, key="show_full_country_table"):
-    st.markdown("### 📋 All Countries")
-    st.dataframe(country_counts, use_container_width=True)
-
+else:
+    st.info("No country data available in BandCountry field.")
 
 
 
@@ -681,12 +644,6 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
-
-
-
-
-
-
 
 
 
