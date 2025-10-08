@@ -476,31 +476,32 @@ for idx, row in top5.iterrows():
     with cols[idx]:
         flag_url = f"https://flagcdn.com/48x36/{iso2.lower()}.png" if iso2 else None
 
-        # Create a clickable metric block using Markdown + Button inside HTML form
+        # Render a clickable HTML block (flag + country + count)
         html = f"""
-        <form action="" method="post">
-            <button name="country_click" value="{country}" style="
-                background:none;
-                border:none;
-                text-align:center;
-                cursor:pointer;
-                width:100%;
-            ">
-                {'<img src="' + flag_url + '" width="48" style="margin-bottom:6px;"/>' if flag_url else ''}
-                <div style="font-weight:bold;">{country}</div>
-                <div style="font-size:22px;">{count} bands</div>
-            </button>
-        </form>
+        <div style='text-align:center;'>
+            <form action="" method="post">
+                <button name="clicked_country" value="{country}" style="
+                    background:none;
+                    border:none;
+                    cursor:pointer;
+                    text-align:center;
+                    color:inherit;
+                    width:100%;
+                ">
+                    {'<img src="' + flag_url + '" width="48" style="margin-bottom:6px;"/>' if flag_url else ''}
+                    <div style="font-weight:bold;">{country}</div>
+                    <div style="font-size:22px;">{count} bands</div>
+                </button>
+            </form>
+        </div>
         """
         st.markdown(html, unsafe_allow_html=True)
 
-        # Handle click event via Streamlit forms workaround
-        # Each country metric line acts as a pseudo-button via st.form_submit_button
-        # We simulate it below with a real invisible button so Streamlit can capture state
-        if st.button(f"toggle_{country}", key=f"metric_btn_{country}", label_visibility="collapsed"):
+        # Create a matching invisible Streamlit button to handle the click event
+        if st.button(f"toggle_{country}", key=f"toggle_{country}"):
             st.session_state.expanded_countries[country] = not st.session_state.expanded_countries.get(country, False)
 
-        # Show bands if toggled
+        # Show bands if toggled on
         if st.session_state.expanded_countries.get(country, False):
             bands = (
                 df_filtered[df_filtered["BandCountry"].str.upper() == country.upper()]
@@ -513,7 +514,7 @@ for idx, row in top5.iterrows():
             else:
                 st.info(f"No bands found for {country}.", icon="ℹ️")
 
-# --- Full table toggle (unique key to avoid ID conflicts) ---
+# --- Full table toggle ---
 if st.checkbox("Show full country table", value=False, key="show_full_country_table"):
     st.markdown("### 📋 All Countries")
     st.dataframe(country_counts, use_container_width=True)
@@ -680,6 +681,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
