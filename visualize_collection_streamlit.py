@@ -459,50 +459,63 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     )
     country_counts.columns = ["Country", "Count"]
 
-    # --- Top 5 countries with flags ---
-    st.markdown("### 🏳️ Top 5 Countries")
+# --- Top 5 countries with flags ---
+st.markdown("### 🏳️ Top 5 Countries")
 
-    top5 = country_counts.head(5)
-    cols = st.columns(len(top5))
+top5 = country_counts.head(5)
+cols = st.columns(len(top5))
 
-for i, row in top5.iterrows():
+# Ensure session_state dict exists
+if "expanded_countries" not in st.session_state:
+    st.session_state.expanded_countries = {}
+
+for idx, row in top5.iterrows():
     iso2 = iso3_to_iso2(row["Country"])
     count = row["Count"]
     country = row["Country"]
 
-    # Initialize toggle state if missing
-    if "expanded_countries" not in st.session_state:
-        st.session_state.expanded_countries = {}
-
-    with cols[list(top5.index).index(i)]:
+    with cols[idx]:
+        # Use unique button key for each country
         if iso2:
             flag_url = f"https://flagcdn.com/48x36/{iso2.lower()}.png"
-            if st.button(f"🇨🇭 {country}", key=f"flag_{country}"):
-                current = st.session_state.expanded_countries.get(country, False)
-                st.session_state.expanded_countries[country] = not current
 
-            # Display the flag image (optional visual aid)
+            clicked = st.button(
+                label=f"{country} Flag",
+                key=f"flag_btn_{country}",
+                help=f"Click to toggle bands for {country}",
+            )
+
             st.image(flag_url, width=48)
+        else:
+            clicked = st.button(
+                label=f"{country}",
+                key=f"flag_btn_{country}",
+                help=f"Click to toggle bands for {country}",
+            )
+
         st.metric(country, f"{count} bands")
 
-        # If toggled on, show list of bands
+        # Toggle the expanded view
+        if clicked:
+            st.session_state.expanded_countries[country] = not st.session_state.expanded_countries.get(country, False)
+
+        # Show bands if toggled
         if st.session_state.expanded_countries.get(country, False):
             bands = (
                 df_filtered[df_filtered["BandCountry"].str.upper() == country.upper()]
                 .dropna(subset=["artists"])
-                .copy()
             )
-            bands_list = sorted(set(bands["artists"].astype(str)))
-            st.write(f"**Bands from {country}:**")
-            st.write(", ".join(bands_list))
+            if not bands.empty:
+                bands_list = sorted(set(bands["artists"].astype(str)))
+                with st.expander(f"Bands from {country} ({len(bands_list)})", expanded=True):
+                    st.write(", ".join(bands_list))
+            else:
+                st.info(f"No bands found for {country}.", icon="ℹ️")
 
-    # --- Toggle full recap table ---
-    if st.checkbox("Show full country table", value=False):
-        st.markdown("### 📋 All Countries")
-        st.dataframe(country_counts, use_container_width=True)
-
-else:
-    st.info("No country data available in BandCountry field.")
+# --- Full table toggle (ensure unique key) ---
+if st.checkbox("Show full country table", value=False, key="show_full_country_table"):
+    st.markdown("### 📋 All Countries")
+    st.dataframe(country_counts, use_container_width=True)
 
 
 
@@ -665,6 +678,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
