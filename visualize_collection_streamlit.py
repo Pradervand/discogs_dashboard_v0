@@ -466,9 +466,9 @@ if "BandCountry" in df_filtered.columns and not df_filtered["BandCountry"].dropn
     cols = st.columns(len(top5))
 
     for i, row in top5.iterrows():
-    iso2 = iso3_to_iso2(row["Country"])
-    count = row["Count"]
-    country = row["Country"]
+        iso2 = iso3_to_iso2(row["Country"])
+        count = row["Count"]
+        country = row["Country"]
 
     # Initialize toggle state if missing
     if "expanded_countries" not in st.session_state:
@@ -665,6 +665,7 @@ st.markdown(
 # --------------------------
 with st.expander("🔍 Data Preview (click to expand)"):
     st.dataframe(df_filtered)
+
 
 
 
