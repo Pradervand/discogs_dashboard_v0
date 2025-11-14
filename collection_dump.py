@@ -146,7 +146,7 @@ def fetch_all_releases(username, folder_id=0):
                         for fv in field_values if fv.get("field_id") is not None
                     }
                     instance_cache[cache_key] = field_dict
-                    time.sleep(1)  # normal pacing to avoid burst
+                    time.sleep(1.5)  # normal pacing to avoid burst
 
                 price_paid_val = field_dict.get(price_id)
                 seller_val = field_dict.get(seller_id)
@@ -186,10 +186,11 @@ def fetch_all_releases(username, folder_id=0):
         if page >= pagination.get("pages", 0):
             break
         page += 1
-        time.sleep(0.5)  # gentle pause between pages
+        time.sleep(1)  # gentle pause between pages
 
     progress.empty()
     return pd.DataFrame(all_records)
+
 
 
 
