@@ -53,7 +53,7 @@ def safe_request(url, params=None, progress=None):
 # -----------------------
 # API helpers
 # -----------------------
-def get_collection_folder_releases(username, folder_id=0, page=1, per_page=100, progress=None):
+def get_collection_folder_releases(username, folder_id=0, page=1, per_page=250, progress=None):
     url = f"{BASE_URL}/users/{username}/collection/folders/{folder_id}/releases"
     params = {"page": page, "per_page": per_page}
     return safe_request(url, params=params, progress=progress)
@@ -92,7 +92,7 @@ def fetch_all_releases(username, folder_id=0):
     """
     all_records = []
     page = 1
-    per_page = 100
+    per_page = 250
 
     # progress bar setup
     first_page = get_collection_folder_releases(username, folder_id, page=1, per_page=1)
@@ -190,6 +190,7 @@ def fetch_all_releases(username, folder_id=0):
 
     progress.empty()
     return pd.DataFrame(all_records)
+
 
 
 
